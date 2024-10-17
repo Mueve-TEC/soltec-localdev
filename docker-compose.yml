@@ -12,7 +12,7 @@ services:
     environment:
       - HOST=db
       - USER=odoo
-      - PASSWORD=odoo
+      - PASSWORD=odoo    
     networks:
       - odoo-network
 
@@ -21,15 +21,31 @@ services:
     environment:
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=odoo
-      - POSTGRES_DB=odoo
+      - POSTGRES_DB=postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - odoo-network
 
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com  # Cambia este valor
+      - PGADMIN_DEFAULT_PASSWORD=admin           # Cambia este valor
+    depends_on:
+      - db
+    ports:
+      - "5050:80"
+    networks:
+      - odoo-network
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
 volumes:
   odoo-web-data:
   postgres-data:
+  pgadmin-data:
 
 networks:
   odoo-network:
+
