@@ -1,4 +1,0 @@
-[submodule "submodules/helpdesk"]
-	path = submodules/helpdesk
-	url = https://github.com/OCA/helpdesk
-	branch = 16.0
