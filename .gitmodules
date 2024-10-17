@@ -1,5 +1,0 @@
-
-
-[submodule "custom-addons/--force"]
-	path = custom-addons/--force
-	url = https://github.com/luirro777/odoo-module
