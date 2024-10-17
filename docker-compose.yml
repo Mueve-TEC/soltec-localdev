@@ -1,13 +1,15 @@
 version: '3'
 services:
   web:
-    image: odoo:16.0
+    build:
+      context: .
+    image: my-odoo:1.0  
     depends_on:
       - db
     ports:
       - "8069:8069"
     volumes:
-      - ./custom-addons:/mnt/extra-addons
+      #- ./custom-addons:/mnt/extra-addons
       - odoo-web-data:/var/lib/odoo
     environment:
       - HOST=db
@@ -30,8 +32,8 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@example.com  # Cambia este valor
-      - PGADMIN_DEFAULT_PASSWORD=admin           # Cambia este valor
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com  
+      - PGADMIN_DEFAULT_PASSWORD=admin           
     depends_on:
       - db
     ports:
