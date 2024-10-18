@@ -1,0 +1,16 @@
+*.txt
+*.md
+setup
+.*
+LICENSE
+README.rst
+.copier-answers.yml
+.editorconfig
+.eslintrc.yml
+.flake8
+.gitignore
+.isort.cfg
+.pre-commit-config.yml
+.prettierrc.yml
+.pylintrc
+.pylintrc-mandatory
