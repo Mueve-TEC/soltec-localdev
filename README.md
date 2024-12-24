@@ -50,8 +50,6 @@ docker-compose up -d
 
 ### para usar la imagen de Mueve-soltec hay que editar el archivo 
 
-
-
  #para listar las imagenes que tenemos generaldas
 
  docker image ls
@@ -78,6 +76,13 @@ docker-compose-up -d
 
 
 docker volume 
+
+
+
+# Para agregar nuevos módulos
+
+Editar docker-compose.yml y descomentar la línea " #- ./custom-addons:/mnt/extra-addons"
+
 
 
 
