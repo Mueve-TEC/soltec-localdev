@@ -4,7 +4,10 @@ installar git
 git clone https://github.com/Mueve-TEC/soltec-localdev
 
 
-### Para instalar docker
+# Para instalar docker
+
+clonar repo para intalar docker 
+
 cd docker
 sudo ./install_ubuntu.sh
 
