@@ -33,7 +33,7 @@ Para levantarlo localmente:
 docker-compose up -d
 ```
 
-Luego en un navegador ingresamos a [localhost:8069](localhost:8069).
+Luego en un navegador ingresamos a [localhost:8069](http://localhost:8069).
 
 ## Agregar módulos
 
@@ -82,6 +82,28 @@ bash copy_addons.sh
 ```bash
 docker-compose build --no-cache
 ```
+
+## Conexión de Odoo con _Pgadmin4_
+
+Para un mejor manejo y visualización de las bases de datos se incluye _Pgadmin4_, para utilizarlo seguimos los siguientes pasos:
+
+1. Con la imagen corriendo nos dirigimos a [localhost:5050](http://localhost:5050) para abrir la interfaz gráfica de _Pgadmin4_ y nos logueamos con las credenciales configuradas en el [`docker-compose.yml`](/docker-compose.yml):
+
+    - Email Address / Username : `admin@hola.com`
+    - Password: `admin`
+
+2. Presionamos en _`Add new server`_.
+
+3. Agregamos un nombre a la base de datos, _odoo_ por ejemplo.
+
+4. Luego nos dirigimos al campo _`Connection`_ y completamos los siguientes campos:
+
+    -  Host name/address: `db`
+    -  Port: `5432`
+    -  Username: `odoo`
+    -  Password: `odoo`
+
+5. Presionames _`Save`_ para guardar los cambios y agregar la conexión.
 
 ## Instalación
 
