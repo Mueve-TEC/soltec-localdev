@@ -83,7 +83,7 @@ bash copy_addons.sh
 docker-compose build --no-cache
 ```
 
-## Conexión de Odoo con _Pgadmin4_
+## Conexión de la base de datos con _Pgadmin4_
 
 Para un mejor manejo y visualización de las bases de datos se incluye _Pgadmin4_, para utilizarlo seguimos los siguientes pasos:
 
@@ -103,7 +103,7 @@ Para un mejor manejo y visualización de las bases de datos se incluye _Pgadmin4
     -  Username: `odoo`
     -  Password: `odoo`
 
-5. Presionames _`Save`_ para guardar los cambios y agregar la conexión.
+5. Presionamos _`Save`_ para guardar los cambios y agregar la conexión.
 
 ## Instalación
 
