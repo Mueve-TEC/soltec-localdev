@@ -4,13 +4,13 @@ services:
     build:
       context: .
     #image: my-odoo:1.0
-    image: my-soltec-odoo:1.0  
+    image: muevetec/soltec-odoo:1.0.5-dev 
     depends_on:
       - db
     ports:
       - "8069:8069"
     volumes:
-      #- ./custom-addons:/mnt/extra-addons
+      - ./custom-addons:/mnt/extra-addons
       - odoo-web-data:/var/lib/odoo
     environment:
       - HOST=db
