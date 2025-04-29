@@ -4,7 +4,7 @@ services:
     build:
       context: .
     #image: my-odoo:1.0
-    image: muevetec/soltec-odoo:1.0.5-dev 
+    image: muevetec/soltec-odoo:1.0.6-dev 
     depends_on:
       - db
     ports:
