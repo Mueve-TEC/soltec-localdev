@@ -11,7 +11,7 @@ services:
     volumes:
       - ./custom-addons:/mnt/extra-addons
       - odoo-web-data:/var/lib/odoo/.local/share/Odoo
-      - ./config:/etc/odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf
     environment:
       - HOST=db
       - USER=odoo
