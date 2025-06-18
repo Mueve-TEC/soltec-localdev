@@ -1,0 +1,30 @@
+[submodule "submodules/account-financial-tools"]
+	path = submodules/account-financial-tools
+	url = git@github.com:ingadhoc/account-financial-tools.git
+[submodule "submodules/account-payment"]
+	path = submodules/account-payment
+	url = git@github.com:ingadhoc/account-payment.git
+[submodule "submodules/account-reconcile"]
+	path = submodules/account-reconcile
+	url = git@github.com:OCA/account-reconcile.git
+[submodule "submodules/bank-statement-import"]
+	path = submodules/bank-statement-import
+	url = git@github.com:OCA/bank-statement-import.git
+[submodule "submodules/helpdesk"]
+	path = submodules/helpdesk
+	url = git@github.com:OCA/helpdesk.git
+[submodule "submodules/odoo-argentina"]
+	path = submodules/odoo-argentina
+	url = git@github.com:a2systems/odoo-argentina.git
+[submodule "submodules/odoo-union"]
+	path = submodules/odoo-union
+	url = git@github.com:Mueve-TEC/odoo-union.git
+[submodule "submodules/odooapps"]
+	path = submodules/odooapps
+	url = git@github.com:odoomates/odooapps.git
+[submodule "submodules/reporting-engine"]
+	path = submodules/reporting-engine
+	url = git@github.com:OCA/reporting-engine.git
+[submodule "submodules/vertical-association"]
+	path = submodules/vertical-association
+	url = git@github.com:OCA/vertical-association.git
