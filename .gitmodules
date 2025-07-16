@@ -15,7 +15,7 @@
 	url = git@github.com:OCA/helpdesk.git
 [submodule "submodules/odoo-argentina"]
 	path = submodules/odoo-argentina
-	url = git@github.com:a2systems/odoo-argentina.git
+	url = git@github.com:ezeluduena/odoo-argentina.git
 [submodule "submodules/odoo-union"]
 	path = submodules/odoo-union
 	url = git@github.com:Mueve-TEC/odoo-union.git
