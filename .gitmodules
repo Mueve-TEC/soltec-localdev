@@ -28,3 +28,6 @@
 [submodule "submodules/vertical-association"]
 	path = submodules/vertical-association
 	url = git@github.com:OCA/vertical-association.git
+[submodule "submodules/delivery-carrier"]
+	path = submodules/delivery-carrier
+	url = git@github.com:OCA/delivery-carrier.git
