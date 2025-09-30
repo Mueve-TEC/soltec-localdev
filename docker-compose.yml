@@ -9,14 +9,14 @@ services:
       - "8069:8069"
     volumes:
       - ./custom-addons:/mnt/extra-addons
-      - odoo-web-data:/var/lib/odoo
+      - odoo-web-data:/var/lib/odoo/.local/share/Odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf
     environment:
       - HOST=db
       - USER=odoo
-      - PASSWORD=odoo    
+      - PASSWORD=odoo
     networks:
       - odoo-network
-
   db:
     image: postgres:14
     environment:
