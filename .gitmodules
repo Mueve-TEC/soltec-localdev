@@ -22,6 +22,9 @@
 [submodule "submodules/odooapps"]
 	path = submodules/odooapps
 	url = git@github.com:odoomates/odooapps.git
+[submodule "submodules/payment_sipago"]
+	path = submodules/payment_sipago
+	url = git@github.com:Mueve-TEC/payment_sipago.git
 [submodule "submodules/reporting-engine"]
 	path = submodules/reporting-engine
 	url = git@github.com:OCA/reporting-engine.git

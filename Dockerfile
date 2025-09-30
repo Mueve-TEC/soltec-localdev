@@ -1,6 +1,6 @@
 # Usar la imagen base de Odoo v16
 #FROM odoo:16.0
-FROM muevetec/soltec-odoo:1.0.6-dev
+FROM muevetec/soltec-odoo:1.0.8-dev
 
 # Cambiar a usuario root para instalar dependencias
 USER root
