@@ -37,33 +37,13 @@ Luego en un navegador ingresamos a [localhost:8069](http://localhost:8069).
 
 ## Agregar módulos
 
-Para agregar módulos de *Odoo* a la imagen basta con copiarlos en el directorio [**`custom-addons/`**](/custom-addons/) y luego generar nuevamente la imagen.
-
-Una vez copiados los módulos, nos aseguramos que no esté comentada la linea 12  en [`docker-compose.yml`](/docker-compose.yml), que agrega el contenido de custom-addons a la imagen:
-
-```yml
-    volumes:
-      - ./custom-addons:/mnt/extra-addons # ESTA LINEA
-      - odoo-web-data:/var/lib/odoo
-```
-
-Luego generamos nuevamente la imagen:
-
-```bash
-docker-compose build --no-cache
-```
+Para agregar módulos de *Odoo* a la imagen basta con copiarlos en el directorio [**`custom-addons/`**](/custom-addons/) y luego levantar nuevamente el container.
 
 ### Submodulos de *Git*
 
 Para un mejor control de versiones, se pueden integrar los módulos de *Odoo* directamente desde su repositorio agregandolos como submódulos de *Git*.
 
-1. Creamos el directorio para los submódulos:
-
-```bash
-mkdir submodules
-```
-
-2. Luego agregamos los repositorios como submódulos:
+1. Luego agregamos los repositorios como submódulos:
 
 ```bash
 cd submodules
@@ -77,33 +57,33 @@ cd ..
 bash copy_addons.sh
 ```
 
-4. Por último creamos nuevamente la imagen para finalmente integrar los módulos:
+4. Por último levantamos nuevamente el container con los módulos nuevos agregados:
 
 ```bash
-docker-compose build --no-cache
+docker-compose up -d
 ```
 
-## Conexión de la base de datos con _Pgadmin4_
+## Conexión de la base de datos con *Pgadmin4*
 
-Para un mejor manejo y visualización de las bases de datos se incluye _Pgadmin4_, para utilizarlo seguimos los siguientes pasos:
+Para un mejor manejo y visualización de las bases de datos se incluye *Pgadmin4*, para utilizarlo seguimos los siguientes pasos:
 
-1. Con la imagen corriendo nos dirigimos a [localhost:5050](http://localhost:5050) para abrir la interfaz gráfica de _Pgadmin4_ y nos logueamos con las credenciales configuradas en el [`docker-compose.yml`](/docker-compose.yml):
+1. Con la imagen corriendo nos dirigimos a [localhost:5050](http://localhost:5050) para abrir la interfaz gráfica de *Pgadmin4* y nos logueamos con las credenciales configuradas en el [`docker-compose.yml`](/docker-compose.yml):
 
     - Email Address / Username : `admin@hola.com`
     - Password: `admin`
 
-2. Presionamos en _`Add new server`_.
+2. Presionamos en *`Add new server`*.
 
-3. Agregamos un nombre a la base de datos, _odoo_ por ejemplo.
+3. Agregamos un nombre a la base de datos, *odoo* por ejemplo.
 
-4. Luego nos dirigimos al campo _`Connection`_ y completamos los siguientes campos:
+4. Luego nos dirigimos al campo *`Connection`* y completamos los siguientes campos:
 
-    -  Host name/address: `db`
-    -  Port: `5432`
-    -  Username: `odoo`
-    -  Password: `odoo`
+    - Host name/address: `db`
+    - Port: `5432`
+    - Username: `odoo`
+    - Password: `odoo`
 
-5. Presionamos _`Save`_ para guardar los cambios y agregar la conexión.
+5. Presionamos *`Save`* para guardar los cambios y agregar la conexión.
 
 ## Instalación
 
