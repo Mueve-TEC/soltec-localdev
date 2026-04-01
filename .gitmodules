@@ -1,0 +1,24 @@
+[submodule "submodules/odoo-union"]
+	path = submodules/odoo-union
+	url = git@github.com:Mueve-TEC/odoo-union.git
+[submodule "submodules/odoo-argentina"]
+	path = submodules/odoo-argentina
+	url = git@github.com:ingadhoc/odoo-argentina.git
+[submodule "submodules/account-reconcile"]
+	path = submodules/account-reconcile
+	url = git@github.com:OCA/account-reconcile.git
+[submodule "submodules/bank-statement-import"]
+	path = submodules/bank-statement-import
+	url = git@github.com:OCA/bank-statement-import.git
+[submodule "submodules/odoo-argentina-ce"]
+	path = submodules/odoo-argentina-ce
+	url = git@github.com:ingadhoc/odoo-argentina-ce.git
+[submodule "submodules/account-payment"]
+	path = submodules/account-payment
+	url = git@github.com:ingadhoc/account-payment.git
+[submodule "submodules/account-financial-tools"]
+	path = submodules/account-financial-tools
+	url = git@github.com:ingadhoc/account-financial-tools.git
+[submodule "submodules/odooapps"]
+	path = submodules/odooapps
+	url = git@github.com:odoomates/odooapps.git
