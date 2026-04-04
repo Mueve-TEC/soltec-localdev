@@ -1,22 +1,26 @@
-# Usar la imagen base de Odoo v18
 FROM odoo:18.0
-#FROM muevetec/soltec-odoo:1.0.14-dev
 
-# Cambiar a usuario root para instalar dependencias
 USER root
 
-# Actualizar el sistema e instalar
-RUN apt-get update && \
-    apt-get install -y git && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install git -y
+RUN apt-get install python3-m2crypto -y
+RUN apt-get install python3-xlrd python3-chardet python3-ofxparse -y
 
 COPY ./requirements.txt /tmp/requirements.txt
+COPY openssl.cnf /etc/ssl/openssl.cnf
 
-# Debian/PEP 668 bloquea pip en entorno del sistema; en contenedores se permite con este flag.
-RUN pip3 install --break-system-packages -r /tmp/requirements.txt
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
-# Copiar los módulos personalizados desde el host al contenedor
-COPY --chown=odoo:odoo ./custom-addons /mnt/extra-addons
+RUN uv pip install --system --break-system-packages -r /tmp/requirements.txt
 
-# Volver al usuario odoo
+# Parchear incompatibilidades con Python 3.12 y dar permisos al cache de pyafipws
+RUN find /usr/local/lib/python3.12/dist-packages/pysimplesoap/ -name "*.py" -exec \
+	sed -i 's/inspect\.getargspec/inspect.getfullargspec/g' {} \; \
+	&& find /usr/local/lib/python3.12/dist-packages/pyafipws/ -name "*.py" -exec \
+	sed -i 's/SafeConfigParser/RawConfigParser/g' {} \; \
+	&& mkdir -p /usr/local/lib/python3.12/dist-packages/pyafipws/cache \
+	&& chmod -R 777 /usr/local/lib/python3.12/dist-packages/pyafipws/cache
+
 USER odoo
+
+COPY --chown=odoo:odoo ./custom-addons /mnt/extra-addons

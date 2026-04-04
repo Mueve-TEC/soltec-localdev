@@ -1,2 +1,15 @@
-git+https://github.com/reingart/pyafipws
+pyOpenSSL
+psycopg2-binary
+httplib2>=0.7
+py3o.template
+py3o.formats
+git+https://github.com/pysimplesoap/pysimplesoap.git@stable_py3k
+git+https://github.com/Mueve-TEC/pyafipws.git@py3k
+#git+https://github.com/reingart/pyafipws
 
+# Requerimientos para account-reconcile
+xlrd
+
+# Requerimientos para bank-statement-import, ademas del anterior
+ofxparse
+ofxtools
