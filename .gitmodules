@@ -1,0 +1,9 @@
+[submodule "submodules/odoo-union"]
+	path = submodules/odoo-union
+	url = git@github.com:Mueve-TEC/odoo-union.git
+[submodule "submodules/odoo-argentina"]
+	path = submodules/odoo-argentina
+	url = git@github.com:Mueve-TEC/odoo-argentina.git
+[submodule "submodules/odooapps"]
+	path = submodules/odooapps
+	url = git@github.com:odoomates/odooapps.git
