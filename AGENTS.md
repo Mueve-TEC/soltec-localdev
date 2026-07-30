@@ -75,6 +75,7 @@ soltec-localdev-odoo19/
 ├── submodules/                # git submodules — the real source of the modules
 │   ├── odoo-union/            # Mueve-TEC/odoo-union (19.0) — union/sindicato modules
 │   ├── odoo-argentina/        # Mueve-TEC/odoo-argentina (19.0) — AR localization
+│   │   ├── .pre-commit-config.yaml  # adhoc stack (ruff/pylint-odoo/oca-checks/rstcheck)
 │   │   ├── adhoc-modules/     #   git subtrees of ingadhoc upstream repos
 │   │   │   ├── odoo-argentina/
 │   │   │   ├── odoo-argentina-ce/
@@ -425,7 +426,41 @@ pre-commit config). They do **not** replace the per-submodule OCA stack.
 ```bash
 make lint          # pre-commit run --all-files  ruff + prettier + check-xml
 make format        # aplicar autofix ruff/prettier (sin fallar)
+make lint-odoo-ar  # stack adhoc completo dentro de submodules/odoo-argentina
 ```
+
+### Lint scoping — important
+
+`pre-commit` uses the `.pre-commit-config.yaml` at the **git top-level** of
+the current repo, and `pre-commit run --all-files` only scans files tracked
+by *that* repo. Consequences in this project:
+
+- **Supermodule**: `git ls-files` tracks each submodule as a single **gitlink**
+  (a commit pointer), not the files inside it. So `make lint` at the
+  supermodule root only scans supermodule infra files (`Dockerfile`,
+  `docker-compose.yml`, `Makefile`, `copy_addons.sh`, `README.md`, `AGENTS.md`,
+  `pyproject.toml`, `.pre-commit-config.yaml`, `docker/*.sh`, `exclude.txt`).
+  It **does not** see anything under `submodules/<repo>/...` — that code lives
+  in separate git repos.
+- **`submodules/odoo-argentina`**: has its own root `.pre-commit-config.yaml`
+  that recreates the **adhoc stack** (pre-commit-hooks, OCA odoo-pre-commit-hooks,
+  ruff, pylint-odoo, rstcheck — see below). Run `make lint-odoo-ar` (or
+  `cd submodules/odoo-argentina && pre-commit run --all-files`) to apply it.
+  This covers `mueve-modules/` **and** the `adhoc-modules/*` subtrees.
+- **`submodules/bank-statement-import/` and `submodules/account-reconcile/`**:
+  OCA repos with their own root `.pre-commit-config.yaml` (the heavier OCA
+  template: ruff + pylint-odoo + oca-checks + whool + maintainer-tools +
+  prettier + eslint). Run `cd <repo> && pre-commit run --all-files`.
+- **`submodules/odoo-union/` and `submodules/odooapps/`**: **no pre-commit
+  config** of their own, and invisible to the supermodule's. They have no
+  automated lint. If needed, run ruff manually: `ruff check submodules/odoo-union`
+  (and `--fix`). `odooapps` is third-party (odoomates) — treat as read-only.
+- **Dormant subtree configs**: `submodules/odoo-argentina/adhoc-modules/*/.pre-commit-config.yaml`
+  each carry the ingadhoc copier template, but because pre-commit reads the
+  repo top-level config, these are **not used** when running from the
+  `odoo-argentina` root (the new root config supersedes them). They remain as
+  upstream-origin documentation; to apply one explicitly use
+  `pre-commit run --all-files --config adhoc-modules/<sub>/.pre-commit-config.yaml`.
 
 The OCA / ingadhoc stack used inside the submodules is, e.g. for
 `submodules/bank-statement-import/.pre-commit-config.yaml`:
@@ -444,6 +479,18 @@ The OCA / ingadhoc stack used inside the submodules is, e.g. for
 - **pre-commit pre-commit-hooks** `v6.0.0` (trailing-whitespace,
   end-of-file-fixer, check-xml, mixed-line-ending `--fix=lf`, etc.)
 - with `default_language_version: python: python3, node: "22.9.0"`
+
+The **adhoc stack** used by `submodules/odoo-argentina/.pre-commit-config.yaml`
+(lighter than the OCA template above) is:
+
+- **pre-commit pre-commit-hooks** `v5.0.0` (check-xml, check-yaml,
+  trailing-whitespace, end-of-file-fixer, check-merge-conflict, etc.)
+- **OCA odoo-pre-commit-hooks** `v0.0.35` — `oca-checks-odoo-module`,
+  `oca-checks-po`
+- **ruff** (`ruff --fix` + `ruff-format`, astral-sh/ruff-pre-commit `v0.6.8`)
+- **pylint-odoo** (`OCA/pylint-odoo` `v9.1.3`)
+- **rstcheck** `v6.2.1`
+- with `default_language_version: python: python3`
 
 Recommended lint commands for the agent (run **inside the submodule** whose
 config supports it; these are not committed at the supermodule level):
@@ -639,19 +686,25 @@ make odoo-shell DB=<db>       # docker compose exec web odoo shell -d <db>
 Supermódulo (config en `.pre-commit-config.yaml` + `pyproject.toml`):
 
 ```bash
-make lint          # pre-commit run --all-files  (ruff + prettier + check-xml)
-make format        # aplicar autofix ruff/prettier
+make lint          # pre-commit run --all-files  ruff + prettier + check-xml
+make format        # aplicar autofix ruff/prettier (sin fallar)
 ```
 
 Dentro de un submodule que tiene su propio config (pila OCA/ingadhoc completa):
 
 ```bash
-cd submodules/odoo-argentina            # or bank-statement-import / account-reconcile / an adhoc-modules/* repo
-pre-commit run --all-files
-pre-commit run ruff --all-files
-pre-commit run pylint_odoo --all-files
-pre-commit run prettier --all-files
-pre-commit run eslint --all-files
+# odoo-argentina (stack adhoc, cubre mueve-modules/ + adhoc-modules/*)
+make lint-odoo-ar
+#  o equivalentemente:
+cd submodules/odoo-argentina && pre-commit run --all-files
+
+# OCA repos con su propia config (pila OCA completa, distinta de la adhoc)
+cd submodules/bank-statement-import && pre-commit run --all-files
+cd submodules/account-reconcile    && pre-commit run --all-files
+
+# Submodules sin config propio — ruff manual(ruff está instalado en el host)
+ruff check submodules/odoo-union              # Mueve (pushable)
+ruff check submodules/odooapps                # third-party (odoomates, read-only)
 ```
 
 There is no type-checker configured. `mypy` / `pyright` are not set up.

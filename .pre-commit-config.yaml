@@ -1,13 +1,18 @@
 # pre-commit supermódulo — soltec-localdev-odoo19
 #
-# Config mínima para validar los archivos de infra del supermódulo
-# (docker-compose.yml, copy_addons.sh, ENVIRONMENT_GUIDE.md, etc.) y los
-# módulos editados manualmente en submodules/odoo-argentina/mueve-modules/
-# (que NO tienen su propio .pre-commit-config.yaml).
+# ALCANCE IMPORTANTE: pre-commit usa el `.pre-commit-config.yaml` del
+# toplevel del repositorio git. En el supermódulo, `git ls-files` sólo
+# trackea cada submódulo como un gitlink (puntero a commit), NO sus
+# archivos internos. Por lo tanto `pre-commit run --all-files` aquí SÓLO
+#escanea los archivos de infra del supermódulo:
+#   Dockerfile, docker-compose.yml, Makefile, copy_addons.sh, README.md,
+#   AGENTS.md, pyproject.toml, .pre-commit-config.yaml, docker/*.sh, exclude.txt
 #
-# NO reemplaza los pre-commit de los submódulos OCA/ingadhoc — esos corren
-# con la stack completa (pylint-odoo, oca-checks, whool, etc.) dentro de cada
-# submódulo vía `cd submodules/<repo> && pre-commit run --all-files`.
+# NO cubre el código dentro de submodules/<repo>/... — ese vive en repos
+# git separados. Para lintearlos:
+#   * submodules/odoo-argentina/  → `make lint-odoo-ar` (tiene su propio config, ver AGENTS.md)
+#   * submodules/bank-statement-import/ , account-reconcile/  → `cd <repo> && pre-commit run --all-files`
+#   * submodules/odoo-union/ , odooapps/  → sin config propio; usar `ruff check <path>` manualmente
 #
 # Instalación (una vez):  pre-commit install
 # Uso manual:             pre-commit run --all-files   (o `make lint`)

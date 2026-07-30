@@ -98,7 +98,7 @@ submodules-update:  ## Actualizar cada submódulo a la punta de su branch
 # ---------------------------------------------------------------------------
 # Lint / format (a nivel supermódulo — ver AGENTS.md para submódulos)
 # ---------------------------------------------------------------------------
-.PHONY: lint lint-check format
+.PHONY: lint lint-check format lint-odoo-ar
 lint:           ## Correr pre-commit sobre todos los archivos del supermódulo
 	pre-commit run --all-files
 
@@ -108,6 +108,9 @@ lint-check:     ## Correr pre-commit sin autofix (verificación en CI)
 format:         ## Aplicar ruff format + prettier a archivos del supermódulo
 	pre-commit run ruff --all-files || true
 	pre-commit run prettier --all-files || true
+
+lint-odoo-ar:   ## Pre-commit (stack adhoc completo) dentro de submodules/odoo-argentina
+	@cd submodules/odoo-argentina && pre-commit run --all-files
 
 # ---------------------------------------------------------------------------
 # Help
