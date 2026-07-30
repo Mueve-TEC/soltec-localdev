@@ -1,0 +1,37 @@
+[tool.ruff]
+# Config base para ruff a nivel supermódulo.
+# Los submódulos tienen sus propios .pre-commit-config.yaml con ruff v0.13.0
+# (ver submodules/bank-statement-import/.pre-commit-config.yaml). Esta config
+# da un piso mínimo para validar Python editado en cualquier parte del árbol
+# cuando se ejecuta `ruff`/`ruff format` manualmente desde la raíz.
+
+line-length = 120
+target-version = "py311"
+extend-exclude = [
+    "custom-addons",   # generado por copy_addons.sh — nunca editar aquí
+    ".git",
+    ".qodo",
+]
+
+[tool.ruff.lint]
+# Subset pragmático: errores reales + estilo Odoo-relevante, sin ser tan
+# estricto como el pylint-odoo obligatorio de los submódulos OCA.
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes (undefined names, unused imports, etc.)
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long — Odoo ORM a veces genera líneas largas legítimas
+    "B008",  # function call in default argument (común en fields.Char(...))
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__manifest__.py" = ["E", "F", "W"]
+"migrations/*" = ["E", "F", "W"]
+
+[tool.ruff.format]
+quote-style = "preserve"

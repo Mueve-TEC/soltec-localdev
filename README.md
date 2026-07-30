@@ -1,8 +1,8 @@
 # SolTec LocalDev
 
-Entorno de desarrollo local para la imagen de *Odoo* del programa SolTec.
+Entorno de desarrollo local para la imagen de _Odoo_ del programa SolTec.
 
-Para utilizar este enterno necesitamos tener instalados ***Docker*** y ***Git***. Para instalarlos en *Ubuntu* o *Debian* se puede seguir [este](#instalación) instructivo.
+Para utilizar este enterno necesitamos tener instalados **_Docker_** y **_Git_**. Para instalarlos en _Ubuntu_ o _Debian_ se puede seguir [este](#instalación) instructivo.
 
 ## Uso
 
@@ -17,31 +17,31 @@ cd soltec-localdev
 
 En el archivo [`docker-compose.yml`](/docker-compose.yml) están configurados para correr en un mismo contenedor los siguientes servicios:
 
-- *Odoo* del programa SolTec.
-- Base de datos *Postgres*.
-- Visualizador de bases de datos *Pgadmin4*
+- _Odoo_ del programa SolTec.
+- Base de datos _Postgres_.
+- Visualizador de bases de datos _Pgadmin4_
 
 Para crear la imagen del entorno de desarrollo ejecutamos:
 
 ```bash
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 
 Para levantarlo localmente:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Luego en un navegador ingresamos a [localhost:8069](http://localhost:8069).
 
 ## Agregar módulos
 
-Para agregar módulos de *Odoo* a la imagen basta con copiarlos en el directorio [**`custom-addons/`**](/custom-addons/) y luego levantar nuevamente el container.
+Para agregar módulos de _Odoo_ a la imagen basta con copiarlos en el directorio [**`custom-addons/`**](/custom-addons/) y luego levantar nuevamente el container.
 
-### Submodulos de *Git*
+### Submodulos de _Git_
 
-Para un mejor control de versiones, se pueden integrar los módulos de *Odoo* directamente desde su repositorio agregandolos como submódulos de *Git*.
+Para un mejor control de versiones, se pueden integrar los módulos de _Odoo_ directamente desde su repositorio agregandolos como submódulos de _Git_.
 
 1. Luego agregamos los repositorios como submódulos:
 
@@ -60,30 +60,28 @@ bash copy_addons.sh
 4. Por último levantamos nuevamente el container con los módulos nuevos agregados:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-## Conexión de la base de datos con *Pgadmin4*
+## Conexión de la base de datos con _Pgadmin4_
 
-Para un mejor manejo y visualización de las bases de datos se incluye *Pgadmin4*, para utilizarlo seguimos los siguientes pasos:
+Para un mejor manejo y visualización de las bases de datos se incluye _Pgadmin4_, para utilizarlo seguimos los siguientes pasos:
 
-1. Con la imagen corriendo nos dirigimos a [localhost:5050](http://localhost:5050) para abrir la interfaz gráfica de *Pgadmin4* y nos logueamos con las credenciales configuradas en el [`docker-compose.yml`](/docker-compose.yml):
+1. Con la imagen corriendo nos dirigimos a [localhost:5050](http://localhost:5050) para abrir la interfaz gráfica de _Pgadmin4_ y nos logueamos con las credenciales configuradas en el [`docker-compose.yml`](/docker-compose.yml):
+   - Email Address / Username : `admin@hola.com`
+   - Password: `admin`
 
-    - Email Address / Username : `admin@hola.com`
-    - Password: `admin`
+2. Presionamos en _`Add new server`_.
 
-2. Presionamos en *`Add new server`*.
+3. Agregamos un nombre a la base de datos, _odoo_ por ejemplo.
 
-3. Agregamos un nombre a la base de datos, *odoo* por ejemplo.
+4. Luego nos dirigimos al campo _`Connection`_ y completamos los siguientes campos:
+   - Host name/address: `db`
+   - Port: `5432`
+   - Username: `odoo`
+   - Password: `odoo`
 
-4. Luego nos dirigimos al campo *`Connection`* y completamos los siguientes campos:
-
-    - Host name/address: `db`
-    - Port: `5432`
-    - Username: `odoo`
-    - Password: `odoo`
-
-5. Presionamos *`Save`* para guardar los cambios y agregar la conexión.
+5. Presionamos _`Save`_ para guardar los cambios y agregar la conexión.
 
 ## Instalación
 
@@ -109,7 +107,7 @@ sudo bash docker/install_debian.sh
 
 #### Crear grupo de usuarios docker
 
- Para no tener que agregar `sudo` a cada comando de *Docker* que utilicemos podemos crear un grupo de usuarios docker y agregar nuestro usuario al grupo.
+Para no tener que agregar `sudo` a cada comando de _Docker_ que utilicemos podemos crear un grupo de usuarios docker y agregar nuestro usuario al grupo.
 
 1. Crear el grupo docker.
 

@@ -1,0 +1,49 @@
+# pre-commit supermódulo — soltec-localdev-odoo19
+#
+# Config mínima para validar los archivos de infra del supermódulo
+# (docker-compose.yml, copy_addons.sh, ENVIRONMENT_GUIDE.md, etc.) y los
+# módulos editados manualmente en submodules/odoo-argentina/mueve-modules/
+# (que NO tienen su propio .pre-commit-config.yaml).
+#
+# NO reemplaza los pre-commit de los submódulos OCA/ingadhoc — esos corren
+# con la stack completa (pylint-odoo, oca-checks, whool, etc.) dentro de cada
+# submódulo vía `cd submodules/<repo> && pre-commit run --all-files`.
+#
+# Instalación (una vez):  pre-commit install
+# Uso manual:             pre-commit run --all-files   (o `make lint`)
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier (with plugin-xml)
+        entry: prettier
+        args:
+          - --write
+          - --list-different
+          - --ignore-unknown
+        types: [text]
+        files: \.(css|htm|html|js|json|jsx|less|md|scss|toml|xml|yaml|yml)$
+        language: node
+        additional_dependencies:
+          - "prettier@3.6.2"
+          - "@prettier/plugin-xml@3.4.2"
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-xml
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
