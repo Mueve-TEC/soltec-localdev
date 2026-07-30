@@ -96,7 +96,7 @@ submodules-update:  ## Actualizar cada submódulo a la punta de su branch
 	git submodule update --remote --merge
 
 # ---------------------------------------------------------------------------
-# Lint / format (a nivel supermódulo — ver ENVIRONMENT_GUIDE.md para submódulos)
+# Lint / format (a nivel supermódulo — ver AGENTS.md para submódulos)
 # ---------------------------------------------------------------------------
 .PHONY: lint lint-check format
 lint:           ## Correr pre-commit sobre todos los archivos del supermódulo
