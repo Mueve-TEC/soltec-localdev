@@ -7,6 +7,7 @@
 > the repo contents.
 
 > **When passing this file to an agent**, instruct it to:
+>
 > 1. Read this document in full before doing anything else.
 > 2. Never edit `custom-addons/` in place (it is generated and gitignored).
 > 3. Make all edits inside the right `submodules/<repo>/...` module dir,
@@ -98,7 +99,7 @@ soltec-localdev-odoo19/
 
 Key insight: **`custom-addons/` is generated and gitignored.** Nothing under
 it should be edited directly — edit in `submodules/<repo>/` and re-run
-`bash copy_addons.sh`. The only editable source tracked by *this* repo is
+`bash copy_addons.sh`. The only editable source tracked by _this_ repo is
 the Dockerfile, docker-compose.yml, copy_addons.sh, exclude.txt, README.md,
 and the submodule pointers in `.gitmodules`.
 
@@ -108,16 +109,16 @@ Everything runs through Docker Compose on the host (no host-level Odoo install
 required). From the repo root there is a **`Makefile`** wrapping the common
 flows; the raw `docker compose` equivalents are shown alongside.
 
-| Action | Make target | Raw command |
-|---|---|---|
-| Build the Odoo image (first time / after Dockerfile change) | `make build` | `docker compose build --no-cache` |
-| Start all services (detached) | `make up` | `docker compose up -d` |
-| Stop services | `make down` | `docker compose down` |
-| Stop + delete volumes (wipe DB/files) | `make down-clean` | `docker compose down -v` |
-| View Odoo logs (follow) | `make logs` | `docker compose logs -f web` |
-| Service status | `make ps` | `docker compose ps` |
-| Open a shell inside the Odoo container | `make shell` | `docker compose exec web bash` |
-| Restart the web service | `make restart` | `docker compose restart web` |
+| Action                                                      | Make target       | Raw command                       |
+| ----------------------------------------------------------- | ----------------- | --------------------------------- |
+| Build the Odoo image (first time / after Dockerfile change) | `make build`      | `docker compose build --no-cache` |
+| Start all services (detached)                               | `make up`         | `docker compose up -d`            |
+| Stop services                                               | `make down`       | `docker compose down`             |
+| Stop + delete volumes (wipe DB/files)                       | `make down-clean` | `docker compose down -v`          |
+| View Odoo logs (follow)                                     | `make logs`       | `docker compose logs -f web`      |
+| Service status                                              | `make ps`         | `docker compose ps`               |
+| Open a shell inside the Odoo container                      | `make shell`      | `docker compose exec web bash`    |
+| Restart the web service                                     | `make restart`    | `docker compose restart web`      |
 
 `make help` lists all targets. Variable overrides: `DB=<db>` (default `odoo`),
 `MODULE=<module>` (default `base`), `TEST_TAGS=<filter>`.
@@ -140,6 +141,7 @@ Services and ports (from `docker-compose.yml`):
   - To connect pgadmin to the DB: host `db`, port `5432`, user `odoo`, password `odoo`.
 
 Notes:
+
 - There is **no `.env` file** and **no test-runner script** at
   the repo root. All config is inline in `docker-compose.yml`.
 - The Odoo container's `command` only sets `--addons-path`; it does **not**
@@ -161,13 +163,13 @@ Notes:
 The flat addons path served to Odoo lives in **`custom-addons/`** (generated,
 71 modules). They originate from the five submodules:
 
-| Submodule | Upstream | Branch | Purpose |
-|---|---|---|---|
-| `submodules/odoo-union` | `git@github.com:Mueve-TEC/odoo-union.git` | 19.0 | Union / "sindicato" modules (affiliation, contributions, benefits, school positions) |
-| `submodules/odoo-argentina` | `git@github.com:Mueve-TEC/odoo-argentina.git` | 19.0 | Argentine localization (AR tax, AFIP/ARCA web services, payment bundle, etc.) |
-| `submodules/odooapps` | `git@github.com:odoomates/odooapps.git` | 19.0 | `om_*` accounting/payroll modules (om_account_accountant, om_hr_payroll, …) |
-| `submodules/bank-statement-import` | `git@github.com:OCA/bank-statement-import.git` | 19.0 | OCA bank statement import suite |
-| `submodules/account-reconcile` | `git@github.com:OCA/account-reconcile.git` | 19.0 | OCA reconcile / statement base |
+| Submodule                          | Upstream                                       | Branch | Purpose                                                                              |
+| ---------------------------------- | ---------------------------------------------- | ------ | ------------------------------------------------------------------------------------ |
+| `submodules/odoo-union`            | `git@github.com:Mueve-TEC/odoo-union.git`      | 19.0   | Union / "sindicato" modules (affiliation, contributions, benefits, school positions) |
+| `submodules/odoo-argentina`        | `git@github.com:Mueve-TEC/odoo-argentina.git`  | 19.0   | Argentine localization (AR tax, AFIP/ARCA web services, payment bundle, etc.)        |
+| `submodules/odooapps`              | `git@github.com:odoomates/odooapps.git`        | 19.0   | `om_*` accounting/payroll modules (om_account_accountant, om_hr_payroll, …)          |
+| `submodules/bank-statement-import` | `git@github.com:OCA/bank-statement-import.git` | 19.0   | OCA bank statement import suite                                                      |
+| `submodules/account-reconcile`     | `git@github.com:OCA/account-reconcile.git`     | 19.0   | OCA reconcile / statement base                                                       |
 
 ### Full list of modules in `custom-addons/` (71)
 
@@ -213,6 +215,7 @@ union_school_position
 ### Representative module structures
 
 **`union_affiliation`** (Mueve-TEC, Odoo 19-native) — `version: 19.0.0.0.0`:
+
 ```
 union_affiliation/
 ├── controllers/   data/   demo/   i18n/   static/
@@ -220,6 +223,7 @@ union_affiliation/
 ├── __init__.py
 └── __manifest__.py     # name "Sindicato - Afiliaciones", author "Mueve", AGPL-3
 ```
+
 Depends on `base`, `mail`. Has `demo/demo.xml` and `data/default_home_action.xml`.
 **No `tests/` directory** — Mueve's `odoo-union` modules have no automated tests.
 
@@ -233,13 +237,15 @@ rules, and `_post_init_hook(env)` signatures all still need Odoo-19 work.
 **`eh_account_base`** (ERP Heritage, the newest code in the tree) —
 `version: 19.0.1.7.0`, license LGPL-3, lives at
 `submodules/odoo-argentina/mueve-modules/eh_account_base/`. Full structure:
+
 ```
 eh_account_base/
 ├── data/  demo/  hooks.py  i18n/  migrations/19.0.1.0.1/
 ├── models/  report/  security/  static/  tests/  tools/  views/
 └── __manifest__.py
 ```
-This is the *only* Mueve module with a substantial test suite:
+
+This is the _only_ Mueve module with a substantial test suite:
 `tests/test_account_move_report.py`, `test_cache_invalidation.py`,
 `test_dynamic_report.py`, `test_move_seal.py`, `test_net_guard.py`,
 `test_payload_codec.py`, `test_perf_sql_builder.py`,
@@ -256,17 +262,17 @@ mechanism, **not** OpenUpgrade).
 Most modules declare `19.0.x.y`. A handful still carry **older version strings —
 these are migration-incomplete signals**, not just cosmetic:
 
-| Module | Manifest version | Meaning |
-|---|---|---|
-| `l10n_ar_inflation_adjustment` | `18.0.1.0.0` | Mueve module, flagged in PLAN.md as not yet migrated |
-| `l10n_ar_pos_afipws_fe` | `18.0.1.0.0` | README says "not yet migrated in the adhoc-dev branch" |
-| `l10n_ar_reports` | `16.0.1.0.0` | Same — pending migration |
-| `l10n_ar_afipws` | `18.0.1.0.0` | Old module name; renamed upstream → `l10n_ar_fiscal_ws` (now at `19.0.1.0.0`) |
-| `l10n_ar_afipws_fe` | `18.0.2.0.0` | Old name → `l10n_ar_fiscal_ws_fe` (now `19.0.1.0.0`) |
-| `l10n_ar_tax_ratio` | `18.0.1.0.0` | Needs version bump / migration check |
-| `account_payment_multi` | `18.0.1.1.0` | Needs version bump / migration check |
-| `account_financial_amount` | `13.0.1.0.0` | Very old version string carried forward |
-| `om_*` (odooapps) | `1.0.x`, `1.4`, `19.0.0.0`, etc. | odoomates uses its own non-OCA version scheme; not a bug |
+| Module                         | Manifest version                 | Meaning                                                                       |
+| ------------------------------ | -------------------------------- | ----------------------------------------------------------------------------- |
+| `l10n_ar_inflation_adjustment` | `18.0.1.0.0`                     | Mueve module, flagged in PLAN.md as not yet migrated                          |
+| `l10n_ar_pos_afipws_fe`        | `18.0.1.0.0`                     | README says "not yet migrated in the adhoc-dev branch"                        |
+| `l10n_ar_reports`              | `16.0.1.0.0`                     | Same — pending migration                                                      |
+| `l10n_ar_afipws`               | `18.0.1.0.0`                     | Old module name; renamed upstream → `l10n_ar_fiscal_ws` (now at `19.0.1.0.0`) |
+| `l10n_ar_afipws_fe`            | `18.0.2.0.0`                     | Old name → `l10n_ar_fiscal_ws_fe` (now `19.0.1.0.0`)                          |
+| `l10n_ar_tax_ratio`            | `18.0.1.0.0`                     | Needs version bump / migration check                                          |
+| `account_payment_multi`        | `18.0.1.1.0`                     | Needs version bump / migration check                                          |
+| `account_financial_amount`     | `13.0.1.0.0`                     | Very old version string carried forward                                       |
+| `om_*` (odooapps)              | `1.0.x`, `1.4`, `19.0.0.0`, etc. | odoomates uses its own non-OCA version scheme; not a bug                      |
 
 There is a **backward-compatibility shim** `l10n_ar_tax_backward_compatibility`
 (depends only on `l10n_ar_tax`) — install it where old `l10n_ar_tax` behavior
@@ -299,10 +305,10 @@ documented in detail in `submodules/odoo-argentina/PLAN.md`. Summary:
    upstream updates via 3-way merge; submodules would require fork-backed
    reachable pins (no fork exists).
 3. **Per-repo upstream tracked** (see `submodules/odoo-argentina/scripts/pull-upstream.sh`):
-   - `odoo-argentina`           → `https://github.com/ingadhoc/odoo-argentina.git`           branch `19.0`
-   - `odoo-argentina-ce`        → `https://github.com/adhoc-dev/odoo-argentina-ce.git`        branch `19.0-mig-MAQ` (adhoc-dev's *migration* branch; open PR #92 to ingadhoc; this is the branch that does the actual 18→19 migration of the CE modules, including the rename `l10n_ar_afipws`→`l10n_ar_fiscal_ws`)
-   - `account-payment`          → `https://github.com/ingadhoc/account-payment.git`           branch `19.0`
-   - `account-financial-tools`  → `https://github.com/ingadhoc/account-financial-tools.git`   branch `19.0`
+   - `odoo-argentina` → `https://github.com/ingadhoc/odoo-argentina.git` branch `19.0`
+   - `odoo-argentina-ce` → `https://github.com/adhoc-dev/odoo-argentina-ce.git` branch `19.0-mig-MAQ` (adhoc-dev's _migration_ branch; open PR #92 to ingadhoc; this is the branch that does the actual 18→19 migration of the CE modules, including the rename `l10n_ar_afipws`→`l10n_ar_fiscal_ws`)
+   - `account-payment` → `https://github.com/ingadhoc/account-payment.git` branch `19.0`
+   - `account-financial-tools` → `https://github.com/ingadhoc/account-financial-tools.git` branch `19.0`
 4. To pull upstream updates **inside `submodules/odoo-argentina/`** (a
    separate git repo with its own `origin = Mueve-TEC/odoo-argentina`):
    ```bash
@@ -398,7 +404,7 @@ CI (where it exists) lives in the submodules, not here:
   `.github/workflows/pre-commit.yml` (e.g.
   `submodules/bank-statement-import/.github/workflows/test.yml`),
   using OCA standard test tags (`/level`, `post_install`, etc.) — these run
-  *upstream*, against each submodule repo, not from this supermodule.
+  _upstream_, against each submodule repo, not from this supermodule.
 - There is **no** `.github/`, `azure-pipelines.yml`, or `.gitlab-ci.yml` at the
   supermodule root.
 
@@ -525,7 +531,7 @@ make logs          # docker compose logs -f web
 make ps            # docker compose ps
 make shell         # docker compose exec web bash
 make restart       # docker compose restart web
-````
+```
 
 ### Sync modules from submodules to the addons path
 
@@ -610,7 +616,7 @@ docker compose exec web odoo \
 docker compose exec web odoo -d <db> --test-enable --test-tags=soltec.<module> -u <module> --stop-after-init
 ```
 
-> Note: Odoo's `--test-tags` filters by *module path* (`module.Class.method`
+> Note: Odoo's `--test-tags` filters by _module path_ (`module.Class.method`
 > syntax) and/or custom tags. The leading `/` form matches tags, not paths,
 > so a typical "run everything in module X" is just `--test-tags=<module_name>`
 > when tests are tagged with the module name (common OCA pattern).
@@ -659,11 +665,11 @@ There is no type-checker configured. `mypy` / `pyright` are not set up.
    - `soltec-localdev-odoo19` → `Mueve-TEC/soltec-localdev`.
    - `submodules/odoo-argentina` → `Mueve-TEC/odoo-argentina` (this is where AR
      localization fixes and `mueve-modules/` commits go).
-   Other submodules (`odoo-union`, `odooapps`, `bank-statement-import`,
-   `account-reconcile`) are third-party (Mueve-TEC / odoomates / OCA); treat
-   them as read-only unless you have push rights there.
-   `odoo-union` is currently checked out in a **detached HEAD** state at
-   commit `93d26f6` — check out its `19.0` branch before committing to it.
+     Other submodules (`odoo-union`, `odooapps`, `bank-statement-import`,
+     `account-reconcile`) are third-party (Mueve-TEC / odoomates / OCA); treat
+     them as read-only unless you have push rights there.
+     `odoo-union` is currently checked out in a **detached HEAD** state at
+     commit `93d26f6` — check out its `19.0` branch before committing to it.
 3. **`[FIX-adhoc] <module>: <description>`** is the required commit-message
    prefix for in-place fixes to `adhoc-modules/` inside `odoo-argentina`
    (rhymes with OCA's `[FIX]` convention but signals "local patch on vendored
