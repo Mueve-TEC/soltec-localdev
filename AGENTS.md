@@ -80,7 +80,8 @@ soltec-localdev-odoo19/
 │   │   │   ├── odoo-argentina/
 │   │   │   ├── odoo-argentina-ce/
 │   │   │   ├── account-payment/
-│   │   │   └── account-financial-tools/
+│   │   │   ├── account-financial-tools/
+│   │   │   └── account-invoicing/
 │   │   ├── mueve-modules/     #   Mueve's own modules (home of new code)
 │   │   │   ├── eh_account_base/      (ERP Heritage, 19.0.1.7.0)
 │   │   │   ├── eh_account_reconcile_pro/
@@ -172,14 +173,18 @@ The flat addons path served to Odoo lives in **`custom-addons/`** (generated,
 | `submodules/bank-statement-import` | `git@github.com:OCA/bank-statement-import.git` | 19.0   | OCA bank statement import suite                                                      |
 | `submodules/account-reconcile`     | `git@github.com:OCA/account-reconcile.git`     | 19.0   | OCA reconcile / statement base                                                       |
 
-### Full list of modules in `custom-addons/` (71)
+### Full list of modules in `custom-addons/` (81)
 
 ```
-account_analytic_ux                 account_cashbox
-account_cashbox_bundle              account_cashbox_l10n_latam_check
-account_debt_report                 account_exchange_difference_invoice
-account_financial_amount            accounting_pdf_reports
-account_interests                   account_internal_transfer
+account_analytic_ux                 account_background_post
+account_cashbox                     account_cashbox_bundle
+account_cashbox_l10n_latam_check    account_debt_report
+account_exchange_difference_invoice account_financial_amount
+accounting_pdf_reports              account_interests
+account_internal_transfer           account_invoice_commission
+account_invoice_control             account_invoice_line_number
+account_invoice_move_currency       account_invoice_partial
+account_invoice_prices_update       account_invoice_tax
 account_journal_security            account_payment_financial_surcharge
 account_payment_loan                account_payment_multi
 account_payment_pro                 account_payment_pro_receiptbook
@@ -202,7 +207,7 @@ l10n_ar_reports                     l10n_ar_tax
 l10n_ar_tax_backward_compatibility  l10n_ar_tax_payment_method
 l10n_ar_tax_python                  l10n_ar_tax_ratio
 l10n_ar_ux                          l10n_latam_check_ux
-om_account_accountant               om_account_asset
+l10n_latam_invoice_document_ux      om_account_accountant               om_account_asset
 om_account_budget                   om_account_daily_reports
 om_account_followup                 om_data_remove
 om_fiscal_year                      om_hr_payroll
@@ -211,6 +216,7 @@ payment_retry                       sale_order_type_automation_payment_pro
 stock_account_ux                     union_affiliation
 union_benefit_request               union_contribution
 union_school_position
+website_sale_account_invoice_commission
 ```
 
 ### Representative module structures
@@ -299,7 +305,9 @@ documented in detail in `submodules/odoo-argentina/PLAN.md`. Summary:
 
 1. `Mueve-TEC/odoo-argentina` is the canonical AR localization repo. Its
    `19.0` branch was created from `18.0` and then **git subtree**-imported four
-   ingadhoc upstream repos at their 19.0 branches under `adhoc-modules/`.
+   ingadhoc upstream repos at their 19.0 branches under `adhoc-modules/`
+   (a fifth, `account-invoicing`, was added later to provide
+   `account_background_post`).
 2. **Why subtree, not submodules**: Mueve sometimes edits upstream files
    in place (`[FIX-adhoc] <module>: <description>` commit prefix) but never
    pushes fixes upstream. Subtree keeps a self-contained clone and re-merges
@@ -310,6 +318,9 @@ documented in detail in `submodules/odoo-argentina/PLAN.md`. Summary:
    - `odoo-argentina-ce` → `https://github.com/adhoc-dev/odoo-argentina-ce.git` branch `19.0-mig-MAQ` (adhoc-dev's _migration_ branch; open PR #92 to ingadhoc; this is the branch that does the actual 18→19 migration of the CE modules, including the rename `l10n_ar_afipws`→`l10n_ar_fiscal_ws`)
    - `account-payment` → `https://github.com/ingadhoc/account-payment.git` branch `19.0`
    - `account-financial-tools` → `https://github.com/ingadhoc/account-financial-tools.git` branch `19.0`
+   - `account-invoicing` → `https://github.com/ingadhoc/account-invoicing.git` branch `19.0`
+     (added later to provide `account_background_post`, a dependency of the
+     vendored `account_ux`; all its modules are Community-edition only)
 4. To pull upstream updates **inside `submodules/odoo-argentina/`** (a
    separate git repo with its own `origin = Mueve-TEC/odoo-argentina`):
    ```bash
