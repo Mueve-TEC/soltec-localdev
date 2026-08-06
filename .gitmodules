@@ -18,3 +18,7 @@
 	path = submodules/account-reconcile
 	url = git@github.com:OCA/account-reconcile.git
 	branch = 19.0
+[submodule "submodules/odoo-ocr"]
+	path = submodules/odoo-ocr
+	url = git@github.com:Mueve-TEC/odoo-ocr.git
+	branch = 19.0

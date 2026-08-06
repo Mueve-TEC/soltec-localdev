@@ -45,14 +45,23 @@ Git identity of the repo:
 - Remote: `git@github.com:Mueve-TEC/soltec-localdev.git`
 - Current branch: `19.0` (local branches also include `18.0` and `main`;
   `origin/HEAD -> origin/main`).
-- Remote branches: `18.0`, `19.0`, `ar_fe`, `correo`, `invoice_QR`, `main`.
+- Remote branches: `18.0`, `19.0`, `ar_fe`, `ar_fe_fiscal_ws`, `correo`,
+  `invoice_QR`, `main`.
 - Branch-naming convention: **per-Odoo-version branches** (`18.0`, `19.0`)
   are the norm; feature branches seen on origin use `snake_case`/short names
-  (`ar_fe`, `correo`, `invoice_QR`).
+  (`ar_fe`, `correo`, `invoice_QR`, `ar_fe_fiscal_ws`).
 
-The `.git` status has one modified submodule pointer:
-`submodules/odoo-argentina` is checked out at a newer commit than the recorded
-supermodule pin (uncommitted). Be aware before committing the supermodule.
+The `.git` status has submodule activity (be aware before committing the
+supermodule):
+
+- `submodules/odoo-argentina` is checked out on `19.0` at a **newer commit**
+  than the recorded supermodule pin (uncommitted). That `19.0` now carries the
+  fiscal-ws + POS migration work: PR `Mueve-TEC/odoo-argentina#2`
+  (`ar_fe_fiscal_ws` → `19.0`) was merged, plus a few `[FIX-adhoc]` follow-ups
+  (live environment reads + invalid-env hard error, wizard skippable on ARCA
+  errors + homologation banner, invoice-date warning, CAE rejection surfacing).
+- `submodules/odoo-ocr` (Mueve-TEC/odoo-ocr, branch `19.0`) is **being added**
+  (staged in `.gitmodules`, work in progress) — don't touch it unless asked.
 
 ## Repository Layout
 
@@ -68,7 +77,7 @@ soltec-localdev-odoo19/
 ├── README.md                  # Spanish, user-facing setup guide
 ├── AGENTS.md                  # this file (opencode project context, auto-loaded)
 ├── .gitignore                 # only: "custom-addons"  (custom-addons is NOT tracked!)
-├── .gitmodules                # 5 git submodules (see below)
+├── .gitmodules                # 5 committed submodules (+ odoo-ocr in progress)
 ├── docker/
 │   ├── install_ubuntu.sh
 │   └── install_debian.sh      # host Docker installers
@@ -95,7 +104,7 @@ soltec-localdev-odoo19/
 │   ├── bank-statement-import/# OCA/bank-statement-import (19.0)
 │   └── account-reconcile/    # OCA/account-reconcile (19.0)
 ├── custom-addons/            # GENERATED (gitignored) — flat Odoo addons path
-│   └── <71 modules, each a dir with __manifest__.py>
+│   └── <82 modules, each a dir with __manifest__.py>
 └── .qodo/                    # Qodo (AI tool) config — agents/ & workflows/ empty
 ```
 
@@ -163,7 +172,7 @@ Notes:
 ## Custom Modules
 
 The flat addons path served to Odoo lives in **`custom-addons/`** (generated,
-71 modules). They originate from the five submodules:
+82 modules). They originate from the five submodules:
 
 | Submodule                          | Upstream                                       | Branch | Purpose                                                                              |
 | ---------------------------------- | ---------------------------------------------- | ------ | ------------------------------------------------------------------------------------ |
@@ -173,7 +182,7 @@ The flat addons path served to Odoo lives in **`custom-addons/`** (generated,
 | `submodules/bank-statement-import` | `git@github.com:OCA/bank-statement-import.git` | 19.0   | OCA bank statement import suite                                                      |
 | `submodules/account-reconcile`     | `git@github.com:OCA/account-reconcile.git`     | 19.0   | OCA reconcile / statement base                                                       |
 
-### Full list of modules in `custom-addons/` (81)
+### Full list of modules in `custom-addons/` (82)
 
 ```
 account_analytic_ux                 account_background_post
@@ -272,7 +281,7 @@ these are migration-incomplete signals**, not just cosmetic:
 | Module                         | Manifest version                 | Meaning                                                                       |
 | ------------------------------ | -------------------------------- | ----------------------------------------------------------------------------- |
 | `l10n_ar_inflation_adjustment` | `18.0.1.0.0`                     | Mueve module, flagged in PLAN.md as not yet migrated                          |
-| `l10n_ar_pos_afipws_fe`        | `18.0.1.0.0`                     | README says "not yet migrated in the adhoc-dev branch"                        |
+| `l10n_ar_pos_afipws_fe`        | `19.0.1.0.0`                     | POS FE migrated to Odoo 19, installable + tests (PR #2, 2026-08-06)          |
 | `l10n_ar_reports`              | `16.0.1.0.0`                     | Same — pending migration                                                      |
 | `l10n_ar_afipws`               | `18.0.1.0.0`                     | Old module name; renamed upstream → `l10n_ar_fiscal_ws` (now at `19.0.1.0.0`) |
 | `l10n_ar_afipws_fe`            | `18.0.2.0.0`                     | Old name → `l10n_ar_fiscal_ws_fe` (now `19.0.1.0.0`)                          |
@@ -325,7 +334,7 @@ documented in detail in `submodules/odoo-argentina/PLAN.md`. Summary:
    separate git repo with its own `origin = Mueve-TEC/odoo-argentina`):
    ```bash
    cd submodules/odoo-argentina
-   ./scripts/pull-upstream.sh <name>   # one of the four keys above
+   ./scripts/pull-upstream.sh <name>   # one of the five keys above
    ```
    Produces a `Squashed …` + `Merge commit …` pair; resolve conflicts
    normally (`git add`, `git commit`), then commit the bumped submodule
@@ -400,15 +409,23 @@ How tests are actually run here:
    automatically on `-u <module>`.
 
 Existing test coverage in the tree is sparse and lives **inside the OCA /
-ADHOC submodules** and in `eh_account_base`:
+ADHOC submodules**, in `eh_account_base`, and (since 2026-08-06) in the ARCA
+web-service modules:
 
-- `custom-addons/*/tests/` present for ~30 modules, almost all of them from
-  the OCA `bank-statement-import` / `account-reconcile` and ADHOC
-  `account-payment` / `account-financial-tools` subtrees.
-- The only substantial homegrown suite is
+- `custom-addons/*/tests/` present for ~35 modules: OCA
+  `bank-statement-import` / `account-reconcile`, ADHOC `account-payment` /
+  `account-financial-tools`, plus new suites in `l10n_ar_fiscal_ws` /
+  `l10n_ar_fiscal_ws_fe` (`test_data_urls`, `test_padron_errors`,
+  `test_padron_province`, `test_padron_responsibility`, `test_currency_rate`;
+  all mock `call_arca_method` — no real ARCA network).
+- The other substantial homegrown suite is
   `submodules/odoo-argentina/mueve-modules/eh_account_base/tests/`
   (15+ test files; TransactionCase-style).
 - **Mueve's `odoo-union` modules have no tests at all.**
+
+> **Gotcha #12 note:** the `Makefile` `install`/`upgrade`/`test*` targets do
+> not pass `--addons-path`/DB args, so use the raw CLI form (see Gotcha #12 in
+> "Conventions & Gotchas") or the runs will not find the custom addons.
 
 CI (where it exists) lives in the submodules, not here:
 
@@ -533,12 +550,18 @@ type-checker.
   localization structure, PyAFIPws dependency install, the
   `./scripts/pull-upstream.sh` workflow, and the `[FIX-adhoc]` local-fix
   commit convention. Notes which upstream modules are not yet migrated
-  (`l10n_ar_pos_afipws_fe`, `l10n_ar_reports`) and the rename
-  `l10n_ar_afipws`→`l10n_ar_fiscal_ws`.
+  (`l10n_ar_reports`) and the rename `l10n_ar_afipws`→`l10n_ar_fiscal_ws`.
 - **`submodules/odoo-argentina/PLAN.md`** (English, comprehensive): the
   process doc for how the `19.0` branch of `odoo-argentina` was built using
   git subtree. Required reading before touching `adhoc-modules/` or
   `scripts/pull-upstream.sh`.
+- **`PLAN.md`** (supermodule root, untracked): the fiscal-ws hand-over doc.
+  Its P1–P9 / F1–F6 / T1 items are **all completed** (work landed in
+  `Mueve-TEC/odoo-argentina` `19.0` via PR #2). Only F6 (`en.po`), C1/C2
+  cosmetic renames, D1 (OpenUpgrade migrations) and the real-ARCA
+  production smoke remain deferred.
+- **`POS_context.md`** (supermodule root, untracked): the POS agent's hand-over
+  for POS + ARCA invoicing (`l10n_ar_pos_afipws_fe`). Leave it to that agent.
 - **`CONTRIBUTING.md`** exists only inside the ingadhoc `adhoc-modules/*`
   subtrees (e.g. `submodules/odoo-argentina/adhoc-modules/odoo-argentina/CONTRIBUTING.md`).
 - **This guide itself** lives at `AGENTS.md` (the opencode project context,
@@ -607,7 +630,8 @@ git submodule update --remote --merge            # bump to each submodule's trac
 git -C submodules/odoo-argentina checkout 19.0   # work on AR localization
 # pull a fresh upstream into the AR localization adhoc-modules:
 cd submodules/odoo-argentina && ./scripts/pull-upstream.sh <name>
-#   <name> ∈ { odoo-argentina, odoo-argentina-ce, account-payment, account-financial-tools }
+#   <name> ∈ { odoo-argentina, odoo-argentina-ce, account-payment,
+#             account-financial-tools, account-invoicing }
 ```
 
 ### Install / upgrade a module (Odoo CLI inside the container)
@@ -623,12 +647,15 @@ make upgrade DB=<db> MODULE=<module_name>
 make install DB=<db> MODULE=l10n_ar,l10n_ar_tax,l10n_ar_ux
 ```
 
-Raw (sin Makefile):
+Raw (sin Makefile — use this form; the `make` targets don't pass
+`--addons-path`/db args, see Gotcha #12):
 
 ```bash
-docker compose exec web odoo -d <db> -i <module_name> --stop-after-init
-docker compose exec web odoo -d <db> -u <module_name> --stop-after-init
-docker compose exec web odoo -d <db> -i l10n_ar,l10n_ar_tax,l10n_ar_ux --stop-after-init
+docker compose exec web odoo \
+  --addons-path=/mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons \
+  --db_host=db --db_user=odoo --db_password=odoo \
+  -d <db> -i <module_name> --stop-after-init --http-port 8099
+# (same with -u <module_name> to upgrade, or -i a,b,c for several modules)
 ```
 
 (If the container is not running, replace `docker compose exec web` with
@@ -741,11 +768,12 @@ There is no type-checker configured. `mypy` / `pyright` are not set up.
    `git -C submodules/odoo-argentina log --grep='^\[FIX-adhoc\]' --name-only -- adhoc-modules/`.
 4. **Migration-incomplete modules** that will not work cleanly on Odoo 19 yet
    (because their code is still Odoo 18/16):
-   `l10n_ar_inflation_adjustment` (18.0.1.0.0), `l10n_ar_pos_afipws_fe`
-   (18.0.1.0.0), `l10n_ar_reports` (16.0.1.0.0), `l10n_ar_tax_ratio`
-   (18.0.1.0.0), `account_payment_multi` (18.0.1.1.0), `account_financial_amount`
-   (13.0.1.0.0). They are present in `custom-addons/` but may fail to install /
-   upgrade. When asked to migrate one, the typical Odoo-19 changes are:
+   `l10n_ar_inflation_adjustment` (18.0.1.0.0), `l10n_ar_reports` (16.0.1.0.0),
+   `l10n_ar_tax_ratio` (18.0.1.0.0), `account_payment_multi` (18.0.1.1.0),
+   `account_financial_amount` (13.0.1.0.0). They are present in `custom-addons/`
+   but may fail to install / upgrade. (`l10n_ar_pos_afipws_fe` was migrated to
+   19.0 in PR #2 and is now installable.) When asked to migrate one, the
+   typical Odoo-19 changes are:
    view `tree`→`list`, `attrs`→inline `invisible`/`readonly`/`required`,
    `states=` dropdown-removal, `name_*` → `<field name="..."/>` in views,
    `_post_init_hook(env)` / `post_init_hook(cr, e)` signature alignment, and
@@ -786,3 +814,24 @@ There is no type-checker configured. `mypy` / `pyright` are not set up.
     are not used by the runtime — safe to delete if cleaning up. (The empty
     `git@github.com:Mueve-TEC/` directory that used to sit at the repo root
     was an accidental `git clone` artifact and has been removed.)
+12. **Makefile `install`/`upgrade`/`test` targets don't work as-is in this
+    setup.** They don't pass `--addons-path` (and the image's `/etc/odoo/odoo.conf`
+    points at a non-existent `/mnt/extra-addons`), and `docker compose exec web
+    odoo` bypasses the entrypoint env vars, so DB host/user/password are unset.
+    For any CLI run use the raw form:
+    ```bash
+    docker compose exec web odoo \
+      --addons-path=/mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons \
+      --db_host=db --db_user=odoo --db_password=odoo \
+      -d <db> -u <module> --stop-after-init --http-port 8099
+    ```
+    Use `--http-port 8099` (a free port): `--no-http` does **not** prevent the
+    "Address already in use" bind error when the web container is running. This
+    is the tested pattern for upgrades and `--test-enable` runs.
+13. **`arcaws.env.type` changes take effect without a server restart.** The
+    environment is read live (via `search()` on the config parameter) and the
+    web-service URLs are not ormcached, so switching homologation↔production
+    applies immediately. An explicitly-set **invalid** value raises a
+    `UserError` (no silent fallback to production). The warning surfaces as a
+    blocking popup on the padrón direct/mass actions and as a persistent banner
+    in the "Update Partners From Padron ARCA" wizard.
