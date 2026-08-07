@@ -21,4 +21,4 @@
 [submodule "submodules/odoo-ocr"]
 	path = submodules/odoo-ocr
 	url = git@github.com:Mueve-TEC/odoo-ocr.git
-	branch = 19.0-mig
+	branch = 19.0
