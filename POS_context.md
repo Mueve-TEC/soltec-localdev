@@ -1,18 +1,25 @@
 # POS Invoicing (Argentina) — Development Context
 
 > Follow-up doc for agentic sessions working on **POS + ARCA electronic invoicing** in
-> `soltec-localdev-odoo19`. Read this first; the ARCA homologation server was **down
-> (HTTP 500)** when this was written (2026-08-06) and the work could not be finished.
+> `soltec-localdev-odoo19`. Read this first.
+>
+> **2026-08-10 update**: ARCA homologation is back up (HTTP 200, `FEDummy` OK) and
+> the end-to-end POS→CAE path now works after the totals fix below. Refund path
+> still pending a live re-test.
 >
 > Supermodule branch `19.0` · submodule `submodules/odoo-argentina` branch `19.0`.
 
 ## Objective / status
 
 Make POS invoicing work end-to-end on Odoo 19 for an Argentine (ARCA) company,
-including the migrated module `l10n_ar_pos_afipws_fe`. **Remaining blocker is
-environmental, not code**: the ARCA homologation service returned 500 for every
-request (even `FEDummy` / the WSDL GET), so the final end-to-end POS→CAE→refund
-test could not run.
+including the migrated module `l10n_ar_pos_afipws_fe`.
+
+**Status (2026-08-10):** normal POS invoicing → ARCA CAE is **working** on
+homologation. Two POS invoices (`FA-B 00006-00000001` for 169.40 and
+`FA-B 00006-00000002` for 6.17) returned `afip_result=A` with CAE
+`86320746773270` / `86320746774506` on DB `admin1`, POS config 2 ("nueva",
+journal 11 / PtoVta 6, `arcaws=wsfe`). The refund (credit note with
+`reversed_entry_id`) path has not been re-tested live yet.
 
 ## What is already done (committed)
 
@@ -38,6 +45,23 @@ In `submodules/odoo-argentina` (branch `19.0`, nothing pushed):
     the diagnostic was lost because the write rolled back with the `UserError`).
   - **Data change requires `-u l10n_ar_fiscal_ws_fe`** (already applied on
     `Monotributo_admin` and `test_pos`) or the response_dict in the DB is stale.
+- `926dc855` — `[FIX-adhoc] l10n_ar_fiscal_ws_fe: pass base_lines to _l10n_ar_get_amounts for ARCA totals`
+  - `models/account_move.py:247` was calling `inv._l10n_ar_get_amounts()` with no
+    `base_lines`. Core Odoo 19's `_l10n_ar_get_amounts(self, base_lines=None)` does
+    `base_lines = base_lines or []` and aggregates over that **empty list**, so every
+    ARCA amount (`ImpNeto`, `ImpIVA`, `ImpTotConc`, `ImpOpEx`, `ImpTrib`) came back
+    **0**. `ImpTotal` was still read from `self.amount_total`, so the request sent
+    `ImpTotal=N` with all other amounts=0 → ARCA rejects with:
+    `10048` (ImpTotal ≠ ImpTotConc+ImpNeto+ImpOpEx+ImpTrib+ImpIVA) and
+    `10018` (if ImpIVA=0 the `Iva`/`AlicIva` object is mandatory, Id iva=3).
+  - This blocked **every** POS invoice (and any invoice via this path), for products
+    with or without IVA taxes — it is not a B2C / Consumidor Final issue (AR B
+    invoices *do* report IVA, included in price).
+  - Fix: pass the rounded tax base lines the same way core's `_get_vat` does:
+    `base_lines = inv._get_rounded_base_and_tax_lines()[0]` then
+    `amounts = inv._l10n_ar_get_amounts(base_lines=base_lines)`.
+  - **Requires `-u l10n_ar_fiscal_ws_fe`** (Python change, picked up by upgrading the
+    module or restarting Odoo with the new code on the addons path).
 
 Supermodule (`soltec-localdev-odoo19`): `f39ab0e` — AGENTS.md doc update +
 submodule pointer bump.
@@ -71,57 +95,87 @@ is required because the running server owns 8069.
 
 ## Manual end-to-end test (when ARCA is back)
 
-Env: `Monotributo_admin` DB. Company **"Ezequiel Ludueña"**, POS config 1
-`invoice_journal_id = 10` ("Factura electrónica", `RAW_MAW`, `arcaws=wsfe`,
-PtoVta 1, homologation certs "Using DB certificates").
+> **2026-08-10**: done successfully on DB `admin1`, POS config 2 ("nueva",
+> journal 11 / PtoVta 6, `arcaws=wsfe`). Two `FA-B` invoices returned CAE
+> (`afip_result=A`). Use this config as the reference working setup.
+
+Env: `admin1` DB. Company **"My Company"** (`partner_id=1`, country AR, resp. type
+1 = IVA Responsable Inscripto, VAT `20431432227`), POS config 2
+`invoice_journal_id = 11` ("Factura POS", `00006`, `arcaws=wsfe`, PtoVta 6,
+homologation certs "Using DB certificates", `arcaws.env.type=homologation`).
+Cert alias `ARCA WS` (CUIT `20431432227`, `in_house`, `confirmed`).
 
 1. **Confirm ARCA homologation is up** (must be HTTP 200):
    ```bash
    docker compose exec web python3 -c "import urllib.request;
    print(urllib.request.urlopen('https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL', timeout=15).status)"
    ```
-2. **Resolve the date desync (error 10016)** — see "Blockers" below.
+   Or check `FEDummy` via zeep:
+   ```bash
+   docker compose exec web python3 -c "
+   from zeep import Client
+   print(Client('https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL').service.FEDummy())"
+   ```
+2. **Resolve the date desync (error 10016)** — see "Blockers" #3 above (only relevant
+   if reusing a PtoVta that has already advanced a date).
 3. Sell + invoice in POS UI → expect ARCA log
    `Running arg electronic invoice on homologation mode` → `CAE solicitado con exito`.
 4. Refund the order → open the credit note (`move_type='out_refund'`) and check
    `reversed_entry_id` = original invoice id:
    ```bash
-   docker compose exec db psql -U odoo -d Monotributo_admin -x \
+   docker compose exec db psql -U odoo -d admin1 -x \
      -c "SELECT id, name, move_type, reversed_entry_id, afip_auth_code FROM account_move WHERE move_type='out_refund' ORDER BY id DESC LIMIT 1;"
    ```
 
-Fast shell repro of the posting path (order 4 = `261-1-000003`, stuck `paid`, no move):
+Fast shell repro of the posting path:
 ```bash
-docker compose exec web odoo shell -d Monotributo_admin \
+docker compose exec web odoo shell -d admin1 \
   --addons-path=/mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons \
   --db_host=db --db_user=odoo --db_password=odoo --no-http <<'EOF'
-order = env['pos.order'].browse(4)
-inv = order._create_invoice(order._prepare_invoice_vals())
+inv = env['account.move'].browse(12)  # draft FA-B, no CAE
+inv.invoice_date = '2026-08-10'
 try:
-    inv.with_context(**order._get_invoice_post_context())._post()
+    inv._post()
+    env.cr.commit()
     print('POST OK', inv.name, inv.afip_result, inv.afip_auth_code)
 except Exception as e:
+    env.cr.rollback()
     print('EXCEPTION:', repr(e))
-inv.button_cancel(); inv.unlink()
 EOF
 ```
 
+### Verified results (2026-08-10, after `926dc855`)
+
+| move | name | amount_untaxed | amount_total | afip_result | afip_auth_code |
+| ---- | ---- | -------------- | ------------ | ----------- | -------------- |
+| 16 | FA-B 00006-00000001 | 140.00 | 169.40 | A | 86320746773270 |
+| 18 | FA-B 00006-00000002 | 5.10 | 6.17 | A | 86320746774506 |
+
+Both from POS orders `261-2-000001` / `261-2-000002` in session 6 ("nueva/00004").
+Note: the earlier draft move 12 stayed draft because it predated the fix and its
+lines had no taxes reflowed; a fresh POS order is the correct way to validate.
+
 ## Blockers
 
-1. **ARCA homologation down** — `wswhomo.afip.gov.ar/wsfev1` returned HTTP 500 for
-   `FEDummy`, `FECompUltimoAutorizado`, `FECAESolicitar` and even the WSDL GET.
-   Nothing to fix client-side; wait and re-check.
-2. **Date desync (ARCA error 10016)** — invoice `FA-C 00001-00000007` (journal 10)
+1. **ARCA homologation — RESOLVED (2026-08-10).** `wswhomo.afip.gov.ar/wsfev1` is
+   now serving HTTP 200; `FEDummy` returns `AppServer/DbServer/AuthServer = OK`;
+   `FECAESolicitar` returns CAE. The earlier 500s were transient on ARCA's side.
+2. **Totals mismatch (ARCA errors 10048 + 10018) — RESOLVED by `926dc855`.** See
+   "What is already done" above. Root cause was `_l10n_ar_get_amounts()` called
+   with no `base_lines`, not a tax/product config issue and not a B2C issue.
+3. **Date desync (ARCA error 10016)** — invoice `FA-C 00001-00000007` (journal 10)
    was authorized with `invoice_date = 2026-08-07` (tomorrow, from earlier manual
    testing). ARCA rejects any new invoice dated < last authorized date, so POS
    orders dated 2026-08-06 fail with
    `(10016) El numero o fecha del comprobante no se corresponde con el proximo a autorizar`.
    Unblock: set the POS order's `date_order` ≥ 2026-08-07, or wait until then, or
-   use a fresh PtoVta / doc-type (e.g. FCE) that hasn't advanced.
-3. **Company "ads" (`admin` DB) resp. type 5 = Consumidor Final** — maps to `[]`
+   use a fresh PtoVta / doc-type (e.g. FCE) that hasn't advanced. PtoVta 6 used by
+   the "nueva" config is a clean point of sale and did not hit this.
+4. **Company "ads" (`admin` DB) resp. type 5 = Consumidor Final** — maps to `[]`
    issued letters in `l10n_ar._get_journal_letter`, so the sale journal has no
    document types and every POS invoice is rolled back with the doc-type
    constraint. Set resp. type 1 (Responsable Inscripto) or 6 to invoice there.
+   (DB `admin1` company is resp. type 1 and works.)
 
 ## Environment notes / gotchas
 
