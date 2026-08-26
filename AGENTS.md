@@ -17,6 +17,8 @@
 >    a submodule whose `origin` you can push to (see "Two pushable repos").
 > 6. Run lint/typcheck/tests when discoverable, prefer inside submodules.
 > 7. This file is the opencode project context (auto-loaded as `AGENTS.md`).
+> 8. **Before starting any task**, scan the [Skills](#skills) section below
+>    and load the matching skill(s) with the `skill` tool.
 
 ## Overview
 
@@ -62,6 +64,56 @@ supermodule):
   errors + homologation banner, invoice-date warning, CAE rejection surfacing).
 - `submodules/odoo-ocr` (Mueve-TEC/odoo-ocr, branch `19.0`) is **being added**
   (staged in `.gitmodules`, work in progress) — don't touch it unless asked.
+
+## Skills
+
+Skills provide specialized instructions and workflows for specific tasks.
+Before starting any task in this repo, scan the table below and load the
+matching skill(s) with the `skill` tool. Skills are not auto-loaded like
+this file — the agent must invoke them explicitly.
+
+### Which skill to load when
+
+| If the task is…                                            | Load                       |
+| ---------------------------------------------------------- | -------------------------- |
+| Write / review Python models, XML views, wizards, manifests | `odoo-development`         |
+| Migrate module code from Odoo 14/16/17/18 → 19             | `odoo-upgrade`             |
+| Write or run `tests/` (TransactionCase, HttpCase, tours)   | `odoo-automated-tests`     |
+| Review a module, a Python file, or an XML view             | `odoo-code-review`         |
+| Audit access rules, sudo, SQL injection, controllers      | `odoo-security`            |
+| OCA conventions, scaffold new OCA-style module             | `odoo-oca-developer`       |
+| Generate test skeletons, mock data, coverage analysis      | `odoo-test`                |
+| Discover / install an agent skill you don't have           | `find-skills`              |
+
+### Available skills in this environment
+
+- **`odoo-development`** — Expert guidance for Odoo ERP development
+  (Python ORM, XML views, module architecture).
+- **`odoo-upgrade`** — Migrate modules between Odoo 14–19 (view
+  `tree`→`list`, `attrs`→inline, `_post_init_hook(env)` signatures, etc.).
+- **`odoo-automated-tests`** — TransactionCase, HttpCase, browser tour
+  tests, mocking, CI integration.
+- **`odoo-code-review`** — Review Odoo (Python & XML) code for best
+  practices, standards, and common errors.
+- **`odoo-security`** — Auditor for `ir.model.access.csv`, HTTP route
+  auth, `sudo()` usage, SQL injection, record-rule completeness.
+- **`odoo-oca-developer`** — OCA conventions, module scaffolding,
+  OpenUpgrade migration patterns, validation tools.
+- **`odoo-test`** — Test skeleton generation, mock-data factories,
+  coverage analysis, single-test / E2E test runners.
+- **`find-skills`** — Discover and install additional agent skills.
+
+### Usage pattern
+
+```python
+# Pseudocode the agent should follow at task start
+if task involves <one of the rows above>:
+    invoke skill("<name>")  # via the skill tool
+```
+
+Skills are additive — load more than one if the task crosses domains
+(e.g. `odoo-upgrade` + `odoo-automated-tests` when migrating a module
+and writing tests for it).
 
 ## Repository Layout
 
