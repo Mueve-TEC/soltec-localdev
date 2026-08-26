@@ -12,10 +12,18 @@
 DB      ?= odoo
 MODULE  ?= base
 TEST_TAGS ?=
+HTTP_PORT ?= 8099
 ODOO_RUN   = $(DOCKER_COMPOSE) exec web
 ODOO_RUN_RM = $(DOCKER_COMPOSE) run --rm web
 
 ADDONS_PATH = /mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons
+
+# Base Odoo CLI command with proper addons-path and DB connection args.
+# Use this for all CLI invocations (Gotcha #12).
+ODOO_CMD = odoo \
+	--addons-path=$(ADDONS_PATH) \
+	--db_host=db --db_user=odoo --db_password=odoo \
+	--http-port=$(HTTP_PORT)
 
 # docker compose v2 plugin; override to `docker-compose` for the legacy v1 binary.
 DOCKER_COMPOSE ?= docker compose
@@ -56,22 +64,32 @@ sync:           ## Sincronizar submodules/ hacia custom-addons/ (copy_addons.sh)
 	bash copy_addons.sh
 
 install:        ## Instalar MODULE en DB  (docker compose exec web odoo -i)
-	$(ODOO_RUN) odoo -d $(DB) -i $(MODULE) --stop-after-init
+	$(ODOO_RUN) $(ODOO_CMD) -d $(DB) -i $(MODULE) --stop-after-init
 
 upgrade:        ## Actualizar MODULE en DB (docker compose exec web odoo -u)
-	$(ODOO_RUN) odoo -d $(DB) -u $(MODULE) --stop-after-init
+	$(ODOO_RUN) $(ODOO_CMD) -d $(DB) -u $(MODULE) --stop-after-init
 
 # ---------------------------------------------------------------------------
 # Tests Odoo (--test-enable + --test-tags)
 # ---------------------------------------------------------------------------
-.PHONY: test test-install test-tags
-test:           ## Correr tests de MODULE (upgrade + --test-enable)
-	$(ODOO_RUN) odoo -d $(DB) -u $(MODULE) --test-enable \
+.PHONY: test test-install test-raw test-install-raw
+test:           ## Correr tests de MODULE (upgrade + --test-enable, output filtrado)
+	@bash scripts/test-runner.sh $(ODOO_RUN) $(ODOO_CMD) -d $(DB) -u $(MODULE) \
+		--test-enable $(if $(TEST_TAGS),--test-tags='$(TEST_TAGS)') \
+		--stop-after-init --log-level=info
+
+test-install:   ## Correr tests de MODULE vía -i (instalación fresca, output filtrado)
+	@bash scripts/test-runner.sh $(ODOO_RUN) $(ODOO_CMD) -d $(DB) -i $(MODULE) \
+		--test-enable $(if $(TEST_TAGS),--test-tags='$(TEST_TAGS)') \
+		--stop-after-init --log-level=info
+
+test-raw:       ## Correr tests de MODULE SIN filtrar (output completo de Odoo)
+	$(ODOO_RUN) $(ODOO_CMD) -d $(DB) -u $(MODULE) --test-enable \
 		$(if $(TEST_TAGS),--test-tags='$(TEST_TAGS)') \
 		--stop-after-init --log-level=info
 
-test-install:   ## Correr tests de MODULE vía -i (instalación fresca)
-	$(ODOO_RUN) odoo -d $(DB) -i $(MODULE) --test-enable \
+test-install-raw: ## Correr tests de MODULE vía -i SIN filtrar
+	$(ODOO_RUN) $(ODOO_CMD) -d $(DB) -i $(MODULE) --test-enable \
 		$(if $(TEST_TAGS),--test-tags='$(TEST_TAGS)') \
 		--stop-after-init --log-level=info
 
@@ -83,7 +101,7 @@ dbshell:        ## psql dentro del container postgres
 	$(DOCKER_COMPOSE) exec db psql -U odoo -d $(DB)
 
 odoo-shell:     ## Odoo shell (prompt Python con env/registry)
-	$(ODOO_RUN) odoo shell -d $(DB)
+	$(ODOO_RUN) $(ODOO_CMD) shell -d $(DB)
 
 # ---------------------------------------------------------------------------
 # Submódulos git
