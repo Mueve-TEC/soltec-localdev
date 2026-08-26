@@ -58,10 +58,10 @@ e2236dd07 [FIX-adhoc] l10n_ar_fiscal_ws: fix imp_iva + monotributo + CABA matchi
 
 Manifest versions in the tree right now:
 
-| Module | Path (under `submodules/odoo-argentina/adhoc-modules/odoo-argentina-ce/`) | `version` |
-|---|---|---|
-| `l10n_ar_fiscal_ws` | `l10n_ar_fiscal_ws/__manifest__.py` | `19.0.1.8.0` |
-| `l10n_ar_fiscal_ws_fe` | `l10n_ar_fiscal_ws_fe/__manifest__.py` | `19.0.1.0.0` ← **needs bump** |
+| Module                 | Path (under `submodules/odoo-argentina/adhoc-modules/odoo-argentina-ce/`) | `version`                     |
+| ---------------------- | ------------------------------------------------------------------------- | ----------------------------- |
+| `l10n_ar_fiscal_ws`    | `l10n_ar_fiscal_ws/__manifest__.py`                                       | `19.0.1.8.0`                  |
+| `l10n_ar_fiscal_ws_fe` | `l10n_ar_fiscal_ws_fe/__manifest__.py`                                    | `19.0.1.0.0` ← **needs bump** |
 
 Working tree of the submodule should be clean (`git -C submodules/odoo-argentina status --short` empty). If the agent committed but did not push, push before starting:
 
@@ -212,6 +212,7 @@ code currently ignores them and produces the misleading
 **Fix:** in `_validate_and_serialize_arca_response` (or right after it
 returns `persona_data` in `get_data_from_padron_arca` and `action_update_from_padron_mass`),
 collect:
+
 ```python
 errors = []
 for k in ("errorConstancia", "errorMonotributo", "errorRegimenGeneral"):
@@ -221,6 +222,7 @@ for k in ("errorConstancia", "errorMonotributo", "errorRegimenGeneral"):
 if errors:
     raise UserError(_("ARCA reportó errores para el CUIT %s:\n%s") % (cuit, "\n".join(errors)))
 ```
+
 Use the same pattern in the mass-update loop so a per-CUIT error gets recorded
 in `error_details` instead of crashing the batch.
 
@@ -246,6 +248,7 @@ method (confirmed via `grep -rn "l10n_ar_fiscal_ws_fe_min_ammount" submodules`
 **Fix (if MiPyME credit-invoice obligation lookup is actually needed):** add a
 new `arcaws.method` record in `l10n_ar_fiscal_ws/data/arcaws.xml` for the
 `wsfecred` service:
+
 ```xml
 <record id="arcawsfecred_method_get_monto" model="arcaws.method">
     <field name="name">get_monto_obligado_recepcion</field>
@@ -261,6 +264,7 @@ new `arcaws.method` record in `l10n_ar_fiscal_ws/data/arcaws.xml` for the
     <field name="response_dict">result = ws_res</field>
 </record>
 ```
+
 then rewrite `l10n_ar_fiscal_ws_fe_min_ammount` to dispatch via
 `method_id.call_arca_method(obj=self, extra_values={"cuit": self.l10n_ar_vat, "fecha_emision": fields.Date.today()})`.
 
@@ -334,12 +338,14 @@ with `""`, silently erasing user data.
 
 **Fix:** guard each key — only include it in `vals` if the ARCA value is
 non-empty. Pseudocode:
+
 ```python
 _direccion = get_value(census, "direccion")
 if _direccion:
     vals["street"] = _direccion
 # same for city, zip
 ```
+
 Or after building vals: `vals = {k: v for k, v in vals.items() if v or k in keep_fields}`.
 
 Note: `name` already has this guard (lines 71-73), `state_id` already conditional on
@@ -362,6 +368,7 @@ changes in this pass, bump minor accordingly (e.g. `19.0.1.2.0`).
 ### F2 — med — Remove raw `env.cr.commit()` inside business logic
 
 **Files:**
+
 - `l10n_ar_fiscal_ws/models/res_company.py:207` (`self.env.cr.commit()  # pylint: disable=invalid-commit`)
 - `l10n_ar_fiscal_ws_fe/models/account_move.py:311` and `:329` (inside `do_pyafipws_request_cae`)
 
@@ -370,9 +377,11 @@ request; can corrupt cursor state under concurrent calls. The CAE case has a
 legitimate intent (CAE is irrevocable — once obtained, you don't want a later
 exception in the same request to roll it back). The correct pattern in Odoo 19
 is to register a post-commit hook:
+
 ```python
 self.env.cr.post_initialize(_lambda_or_method)
 ```
+
 or to use `@api.model_create_multi` / `with_context` patterns that ensure the
 CAE write atomicity at the request boundary. The simplest defensible fix is to
 **remove the commits** and rely on the standard request-level atomicity: if
@@ -421,6 +430,7 @@ electronic invoices. PR #11 (the upstream we ported) shipped it disabled; the
 project owner must confirm whether Mueve needs it.
 
 **Fix (if needed):**
+
 1. Confirm with project owner: do Mueve's customers print ARCA QR on invoices?
 2. If yes: uncomment line 18 ONLY (line 21 references a missing wizard file —
    leave it commented or recreate the file from the upstream diff).
@@ -513,6 +523,7 @@ l10n_ar_fiscal_ws_fe/tests/
 ```
 
 Run with:
+
 ```bash
 make test-install MODULE=l10n_ar_fiscal_ws,l10n_ar_fiscal_ws_fe \
   TEST_TAGS=/l10n_ar_fiscal_ws,/l10n_ar_fiscal_ws_fe

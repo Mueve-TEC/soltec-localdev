@@ -56,7 +56,7 @@ In `submodules/odoo-argentina` (branch `19.0`, nothing pushed):
     `10018` (if ImpIVA=0 the `Iva`/`AlicIva` object is mandatory, Id iva=3).
   - This blocked **every** POS invoice (and any invoice via this path), for products
     with or without IVA taxes — it is not a B2C / Consumidor Final issue (AR B
-    invoices *do* report IVA, included in price).
+    invoices _do_ report IVA, included in price).
   - Fix: pass the rounded tax base lines the same way core's `_get_vat` does:
     `base_lines = inv._get_rounded_base_and_tax_lines()[0]` then
     `amounts = inv._l10n_ar_get_amounts(base_lines=base_lines)`.
@@ -69,6 +69,7 @@ submodule pointer bump.
 ## The migrated module (`l10n_ar_pos_afipws_fe`)
 
 Single override `pos.order._prepare_invoice_vals()`:
+
 - For POS **refunds** of ARCA-authorized invoices (`journal_id.arcaws` +
   `afip_auth_code`, AR company, `out_invoice`), sets `reversed_entry_id` to the
   original invoice; raises `UserError` if >1 such invoice.
@@ -128,6 +129,7 @@ Cert alias `ARCA WS` (CUIT `20431432227`, `in_house`, `confirmed`).
    ```
 
 Fast shell repro of the posting path:
+
 ```bash
 docker compose exec web odoo shell -d admin1 \
   --addons-path=/mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons \
@@ -146,10 +148,10 @@ EOF
 
 ### Verified results (2026-08-10, after `926dc855`)
 
-| move | name | amount_untaxed | amount_total | afip_result | afip_auth_code |
-| ---- | ---- | -------------- | ------------ | ----------- | -------------- |
-| 16 | FA-B 00006-00000001 | 140.00 | 169.40 | A | 86320746773270 |
-| 18 | FA-B 00006-00000002 | 5.10 | 6.17 | A | 86320746774506 |
+| move | name                | amount_untaxed | amount_total | afip_result | afip_auth_code |
+| ---- | ------------------- | -------------- | ------------ | ----------- | -------------- |
+| 16   | FA-B 00006-00000001 | 140.00         | 169.40       | A           | 86320746773270 |
+| 18   | FA-B 00006-00000002 | 5.10           | 6.17         | A           | 86320746774506 |
 
 Both from POS orders `261-2-000001` / `261-2-000002` in session 6 ("nueva/00004").
 Note: the earlier draft move 12 stayed draft because it predated the fix and its
@@ -190,7 +192,7 @@ lines had no taxes reflowed; a fresh POS order is the correct way to validate.
   - `l10n_ar_fiscal_ws/models/arcaws.py` (removes `ormcache` from `get_arca_url`)
   - `l10n_ar_fiscal_ws/models/res_company.py` (reads `arcaws.env.type` via `search()`
     instead of cached `get_param()` — runtime env switch without server restart)
-  Always use **selective `git add <paths>`**; never `git add -A`.
+    Always use **selective `git add <paths>`**; never `git add -A`.
 - Only commit when asked; commit to `submodules/odoo-argentina` (pushable origin
   `Mueve-TEC/odoo-argentina`). Supermodule commit = bump submodule pointer +
   doc changes.

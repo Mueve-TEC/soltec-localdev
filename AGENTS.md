@@ -74,16 +74,16 @@ this file — the agent must invoke them explicitly.
 
 ### Which skill to load when
 
-| If the task is…                                            | Load                       |
-| ---------------------------------------------------------- | -------------------------- |
-| Write / review Python models, XML views, wizards, manifests | `odoo-development`         |
-| Migrate module code from Odoo 14/16/17/18 → 19             | `odoo-upgrade`             |
-| Write or run `tests/` (TransactionCase, HttpCase, tours)   | `odoo-automated-tests`     |
-| Review a module, a Python file, or an XML view             | `odoo-code-review`         |
-| Audit access rules, sudo, SQL injection, controllers      | `odoo-security`            |
-| OCA conventions, scaffold new OCA-style module             | `odoo-oca-developer`       |
-| Generate test skeletons, mock data, coverage analysis      | `odoo-test`                |
-| Discover / install an agent skill you don't have           | `find-skills`              |
+| If the task is…                                             | Load                   |
+| ----------------------------------------------------------- | ---------------------- |
+| Write / review Python models, XML views, wizards, manifests | `odoo-development`     |
+| Migrate module code from Odoo 14/16/17/18 → 19              | `odoo-upgrade`         |
+| Write or run `tests/` (TransactionCase, HttpCase, tours)    | `odoo-automated-tests` |
+| Review a module, a Python file, or an XML view              | `odoo-code-review`     |
+| Audit access rules, sudo, SQL injection, controllers        | `odoo-security`        |
+| OCA conventions, scaffold new OCA-style module              | `odoo-oca-developer`   |
+| Generate test skeletons, mock data, coverage analysis       | `odoo-test`            |
+| Discover / install an agent skill you don't have            | `find-skills`          |
 
 ### Available skills in this environment
 
@@ -333,7 +333,7 @@ these are migration-incomplete signals**, not just cosmetic:
 | Module                         | Manifest version                 | Meaning                                                                       |
 | ------------------------------ | -------------------------------- | ----------------------------------------------------------------------------- |
 | `l10n_ar_inflation_adjustment` | `18.0.1.0.0`                     | Mueve module, flagged in PLAN.md as not yet migrated                          |
-| `l10n_ar_pos_afipws_fe`        | `19.0.1.0.0`                     | POS FE migrated to Odoo 19, installable + tests (PR #2, 2026-08-06)          |
+| `l10n_ar_pos_afipws_fe`        | `19.0.1.0.0`                     | POS FE migrated to Odoo 19, installable + tests (PR #2, 2026-08-06)           |
 | `l10n_ar_reports`              | `16.0.1.0.0`                     | Same — pending migration                                                      |
 | `l10n_ar_afipws`               | `18.0.1.0.0`                     | Old module name; renamed upstream → `l10n_ar_fiscal_ws` (now at `19.0.1.0.0`) |
 | `l10n_ar_afipws_fe`            | `18.0.2.0.0`                     | Old name → `l10n_ar_fiscal_ws_fe` (now `19.0.1.0.0`)                          |
@@ -513,7 +513,7 @@ make lint-odoo-ar  # stack adhoc completo dentro de submodules/odoo-argentina
 
 `pre-commit` uses the `.pre-commit-config.yaml` at the **git top-level** of
 the current repo, and `pre-commit run --all-files` only scans files tracked
-by *that* repo. Consequences in this project:
+by _that_ repo. Consequences in this project:
 
 - **Supermodule**: `git ls-files` tracks each submodule as a single **gitlink**
   (a commit pointer), not the files inside it. So `make lint` at the
@@ -869,14 +869,14 @@ There is no type-checker configured. `mypy` / `pyright` are not set up.
 12. **Makefile `install`/`upgrade`/`test` targets don't work as-is in this
     setup.** They don't pass `--addons-path` (and the image's `/etc/odoo/odoo.conf`
     points at a non-existent `/mnt/extra-addons`), and `docker compose exec web
-    odoo` bypasses the entrypoint env vars, so DB host/user/password are unset.
+odoo` bypasses the entrypoint env vars, so DB host/user/password are unset.
     For any CLI run use the raw form:
-    ```bash
+    `bash
     docker compose exec web odoo \
       --addons-path=/mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons \
       --db_host=db --db_user=odoo --db_password=odoo \
       -d <db> -u <module> --stop-after-init --http-port 8099
-    ```
+    `
     Use `--http-port 8099` (a free port): `--no-http` does **not** prevent the
     "Address already in use" bind error when the web container is running. This
     is the tested pattern for upgrades and `--test-enable` runs.
