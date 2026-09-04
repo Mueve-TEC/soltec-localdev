@@ -1,4 +1,39 @@
-# PLAN — Polish `l10n_ar_fiscal_ws` + `l10n_ar_fiscal_ws_fe` after the 18→19 migration session
+# PLAN — Finish the Odoo-19 migration of the `odoo-argentina` modules
+
+> **Scope (current pass, opened 2026-09-04):** the ARCA fiscal-ws pass below is
+> **complete** (§STATUS). What remains for the 18→19 migration of
+> `Mueve-TEC/odoo-argentina` is a short list of modules that still carry old
+> version strings / unmigrated code, listed in §"Remaining migration work".
+> This file is the hand-over document for the next agent; everything else the
+> agent needs is already in `AGENTS.md` (env, commands, conventions) and
+> `submodules/odoo-argentina/PLAN.md` (subtree mechanics). Do not duplicate
+> either here.
+>
+> **Target executor:** an LLM with write access to `Mueve-TEC/odoo-argentina`
+> branch `19.0`. Read this file and `AGENTS.md` in full before touching anything.
+
+---
+
+## Remaining migration work (current pass)
+
+Verified against the working tree on 2026-09-04 (manifest versions + grep of
+`<tree>`, `attrs=`, `read_group(`, xpaths against Odoo-19 core):
+
+| Priority | Module | Manifest | State | Work |
+| -------- | ------ | -------- | ----- | ---- |
+| **1 (now)** | `l10n_ar_inflation_adjustment` (mueve-modules) | `18.0.1.0.0` | Views already converted to 18/19 syntax by `[MIG]` commits; 3 Odoo-19 breakers found | Fix 2 broken xpaths (account form `deprecated` field removed; search filter `activeacc` renamed `inactiveacc`), remove `<group>` wrapper in the index search view (banned in 19), `read_group` → `_read_group` (2 call sites in the wizard), bump version → `19.0.1.0.0`, fresh-DB install smoke |
+| 2 | `account_payment_multi` (adhoc account-payment) | `18.0.1.1.0` | XML already list/attrs-clean | Version bump only (decide: `[FIX-adhoc]` bump or leave for upstream) |
+| 3 | `account_financial_amount` (adhoc account-financial-tools) | `13.0.1.0.0` | One `attrs=` left in `wizard/res_config_settings_views.xml` | Inline the `attrs`, bump version |
+| 4 | `l10n_ar_reports` (adhoc odoo-argentina-ce) | `16.0.1.0.0` | Genuinely unmigrated Odoo-16 code (2 `<tree>` views, `attrs=`, `states=`) | Full migration pass (biggest remaining item) |
+| cleanup | `l10n_ar_tax_ratio` | — | **Orphan**: dropped upstream in the 19.0 re-import; only a stale `custom-addons/` copy remains (copy_addons.sh cannot prune it — manifest still present) | `rm -rf custom-addons/l10n_ar_tax_ratio` + document |
+
+Conventions for all of the above: edit in the submodule, `[FIX-adhoc]` prefix
+for adhoc-modules in-place fixes, `[MIG]`/`[FIX]` for `mueve-modules/`, then
+`bash copy_addons.sh` + install/upgrade smoke on a scratch DB.
+
+---
+
+# (Previous pass — COMPLETE) Polish `l10n_ar_fiscal_ws` + `l10n_ar_fiscal_ws_fe` after the 18→19 migration session
 
 > **Scope:** bug-fix and cleanup work on two ARCA (ex-AFIP) web-service modules
 > after the migration session that ended on 2026-08-05. This file is the
@@ -30,13 +65,15 @@
 > - CAE rejection surfacing of ARCA `<Errors>` (`_l10n_ar_format_arca_error`)
 > - POS module migration (`l10n_ar_pos_afipws_fe` → 19.0) by the POS agent
 >
-> `l10n_ar_fiscal_ws` = `19.0.1.8.0`; `l10n_ar_fiscal_ws_fe` = `19.0.1.1.0`.
+> `l10n_ar_fiscal_ws` = `19.0.1.8.1`; `l10n_ar_fiscal_ws_fe` = `19.0.1.1.0`;
+> `l10n_ar_pos_afipws_fe` = `19.0.1.0.0`.
 > 28+ automated tests green (all mock `call_arca_method`).
 >
 > **Still deferred (only these):** F6 (`en.po`), C1/C2 cosmetic renames,
 > D1 OpenUpgrade migrations, and the real-ARCA production homologation smoke.
-> `submodules/odoo-argentina` is checked out on `19.0` (newer than the
-> supermodule pin); the next agent should NOT re-run the steps below.
+> The `submodules/odoo-argentina` pointer was since bumped and committed in
+> the supermodule (see AGENTS.md); the next agent should NOT re-run the
+> steps below.
 
 ---
 
