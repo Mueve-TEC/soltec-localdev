@@ -66,6 +66,14 @@ Submodule pointers (state verified 2026-09-04; supermodule working tree
 - `submodules/odoo-union` is checked out on the feature branch
   `feat/uid-char-to-int` (NOT on `19.0`) — check out the right branch before
   committing there.
+- `submodules/payment-sipago` (Mueve-TEC/payment_sipago, branch `19.0`) —
+  Sipago card-payment provider, **migrated to Odoo 19** (2026-09-04): the
+  whole `payment` API rework applied (`_search_by_reference` + `_process` +
+  `_apply_updates`, `_create_child_transaction`, hooks `(env, code)`,
+  `payment_method_ids` instead of `payment_icon_ids`). Commit style in this
+  repo is **conventional commits in Spanish** (`feat:`, `fix:`), no `[TAG]`
+  prefixes. Tests: 29 mocked tests pass; 2 tests are real-network
+  (`external` tag) and need Sipago connectivity.
 
 ## Skills
 
@@ -158,7 +166,7 @@ soltec-localdev-odoo19/
 │   ├── bank-statement-import/# OCA/bank-statement-import (19.0)
 │   └── account-reconcile/    # OCA/account-reconcile (19.0)
 ├── custom-addons/            # GENERATED (gitignored) — flat Odoo addons path
-│   └── <82 modules, each a dir with __manifest__.py>
+│   └── <83 modules, each a dir with __manifest__.py>
 └── .qodo/                    # Qodo (AI tool) config — agents/ & workflows/ empty
 ```
 
@@ -226,7 +234,7 @@ Notes:
 ## Custom Modules
 
 The flat addons path served to Odoo lives in **`custom-addons/`** (generated,
-82 modules). They originate from the five submodules:
+83 modules). They originate from the six submodules:
 
 | Submodule                          | Upstream                                       | Branch | Purpose                                                                              |
 | ---------------------------------- | ---------------------------------------------- | ------ | ------------------------------------------------------------------------------------ |
@@ -235,8 +243,9 @@ The flat addons path served to Odoo lives in **`custom-addons/`** (generated,
 | `submodules/odooapps`              | `git@github.com:odoomates/odooapps.git`        | 19.0   | `om_*` accounting/payroll modules (om_account_accountant, om_hr_payroll, …)          |
 | `submodules/bank-statement-import` | `git@github.com:OCA/bank-statement-import.git` | 19.0   | OCA bank statement import suite                                                      |
 | `submodules/account-reconcile`     | `git@github.com:OCA/account-reconcile.git`     | 19.0   | OCA reconcile / statement base                                                       |
+| `submodules/payment-sipago`        | `git@github.com:Mueve-TEC/payment_sipago.git`  | 19.0   | Sipago card-payment provider (web checkout), migrated to Odoo 19                     |
 
-### Full list of modules in `custom-addons/` (82)
+### Full list of modules in `custom-addons/` (83)
 
 ```
 account_analytic_ux                 account_background_post
@@ -275,7 +284,8 @@ om_account_budget                   om_account_daily_reports
 om_account_followup                 om_data_remove
 om_fiscal_year                      om_hr_payroll
 om_hr_payroll_account               om_recurring_payments
-payment_retry                       sale_order_type_automation_payment_pro
+payment_retry                       payment_sipago
+sale_order_type_automation_payment_pro
 stock_account_ux                     union_affiliation
 union_benefit_request               union_contribution
 union_school_position

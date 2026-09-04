@@ -26,6 +26,7 @@ Verified against the working tree on 2026-09-04 (manifest versions + grep of
 | 3 | `account_financial_amount` (adhoc account-financial-tools) | `13.0.1.0.0` | One `attrs=` left in `wizard/res_config_settings_views.xml` | Inline the `attrs`, bump version |
 | 4 | `l10n_ar_reports` (adhoc odoo-argentina-ce) | `16.0.1.0.0` | Genuinely unmigrated Odoo-16 code (2 `<tree>` views, `attrs=`, `states=`) | Full migration pass (biggest remaining item) |
 | cleanup | `l10n_ar_tax_ratio` | — | **Orphan**: dropped upstream in the 19.0 re-import; only a stale `custom-addons/` copy remains (copy_addons.sh cannot prune it — manifest still present) | `rm -rf custom-addons/l10n_ar_tax_ratio` + document |
+| ✅ done | `payment_sipago` (submodule `payment-sipago`) | was `16.0.1.1.0` | **Migrated 2026-09-04** (`feat: migrar a Odoo 19.0`): full `payment` API rework (`_search_by_reference`+`_process`+`_apply_updates`, `_create_child_transaction`, `payment_method_ids`, hooks `(env, code)`, foreign-xmlid `forcecreate`); 29/31 tests green (2 real-network `external` excluded) | none — submodule `19.0` branch; supermodule `.gitmodules` entry + pointer bumped |
 
 Conventions for all of the above: edit in the submodule, `[FIX-adhoc]` prefix
 for adhoc-modules in-place fixes, `[MIG]`/`[FIX]` for `mueve-modules/`, then
