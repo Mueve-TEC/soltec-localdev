@@ -53,17 +53,19 @@ Git identity of the repo:
   are the norm; feature branches seen on origin use `snake_case`/short names
   (`ar_fe`, `correo`, `invoice_QR`, `ar_fe_fiscal_ws`).
 
-The `.git` status has submodule activity (be aware before committing the
-supermodule):
+Submodule pointers (state verified 2026-09-04; supermodule working tree
+**clean**, all pointers **committed** and pushed):
 
-- `submodules/odoo-argentina` is checked out on `19.0` at a **newer commit**
-  than the recorded supermodule pin (uncommitted). That `19.0` now carries the
+- `submodules/odoo-argentina` → `19.0` @ `36b290e42`. That `19.0` carries the
   fiscal-ws + POS migration work: PR `Mueve-TEC/odoo-argentina#2`
-  (`ar_fe_fiscal_ws` → `19.0`) was merged, plus a few `[FIX-adhoc]` follow-ups
+  (`ar_fe_fiscal_ws` → `19.0`) was merged, plus `[FIX-adhoc]` follow-ups
   (live environment reads + invalid-env hard error, wizard skippable on ARCA
   errors + homologation banner, invoice-date warning, CAE rejection surfacing).
-- `submodules/odoo-ocr` (Mueve-TEC/odoo-ocr, branch `19.0`) is **being added**
-  (staged in `.gitmodules`, work in progress) — don't touch it unless asked.
+- `submodules/odoo-ocr` (Mueve-TEC/odoo-ocr, branch `19.0`) is **fully added**
+  and initialized — don't touch it unless asked.
+- `submodules/odoo-union` is checked out on the feature branch
+  `feat/uid-char-to-int` (NOT on `19.0`) — check out the right branch before
+  committing there.
 
 ## Skills
 
@@ -146,7 +148,7 @@ soltec-localdev-odoo19/
 │   │   ├── mueve-modules/     #   Mueve's own modules (home of new code)
 │   │   │   ├── eh_account_base/      (ERP Heritage, 19.0.1.7.0)
 │   │   │   ├── eh_account_reconcile_pro/
-│   │   │   └── l10n_ar_inflation_adjustment/  (still Odoo-18 code!)
+│   │   │   └── l10n_ar_inflation_adjustment/  (views already 19-syntax; final Odoo-19 validation pending)
 │   │   ├── oca_dependencies.txt
 │   │   ├── requirements.txt
 │   │   ├── scripts/pull-upstream.sh
@@ -295,12 +297,24 @@ union_affiliation/
 Depends on `base`, `mail`. Has `demo/demo.xml` and `data/default_home_action.xml`.
 **No `tests/` directory** — Mueve's `odoo-union` modules have no automated tests.
 
-**`l10n_ar_inflation_adjustment`** (Mueve, **still Odoo-18 code**):
-`version: 18.0.1.0.0`, license AGPL-3, depends `account`, `l10n_ar`,
-has `post_init_hook`. This module is explicitly flagged in
-`submodules/odoo-argentina/PLAN.md` (Step 7) as **not yet migrated to Odoo 19**
-— `tree`→`list` view conversions, `attrs`→inline `invisible`, compute/store
-rules, and `_post_init_hook(env)` signatures all still need Odoo-19 work.
+**`l10n_ar_inflation_adjustment`** (Mueve, **in final migration pass**):
+`version: 18.0.1.0.0` (manifest bump pending), license AGPL-3, depends
+`account`, `l10n_ar`, has `post_init_hook`. The mechanical view migration was
+already done upstream (`[MIG] … updating views syntax for odoo 18` and later
+commits): views use `<list>`, inline `invisible`, and the hook takes `(env)`.
+What is **still missing** for Odoo 19 (being addressed — see supermodule
+`PLAN.md`):
+
+- `views/account_account_views.xml` xpaths target removed Odoo-19 core
+  elements: the account form no longer has a `deprecated` field, and the
+  `activeacc` search filter was renamed → `inactiveacc`.
+- `views/inflation_adjustment_index_views.xml` search view still wrapped
+  group-by filters in an old-style `<group expand="0" string="...">` (core 19
+  dropped that wrapper — plain root-level filters + `<separator/>` is the
+  19-native form).
+- `wizards/inflation_adjustment_wizard.py` uses the deprecated
+  `read_group(domain, fields, groupby)` API → must become `_read_group`.
+- Manifest version bump `18.0.1.0.0` → `19.0.1.0.0` + fresh-DB install smoke.
 
 **`eh_account_base`** (ERP Heritage, the newest code in the tree) —
 `version: 19.0.1.7.0`, license LGPL-3, lives at
@@ -331,16 +345,17 @@ Most modules declare `19.0.x.y`. A handful still carry **older version strings �
 these are migration-incomplete signals**, not just cosmetic:
 
 | Module                         | Manifest version                 | Meaning                                                                       |
-| ------------------------------ | -------------------------------- | ----------------------------------------------------------------------------- |
-| `l10n_ar_inflation_adjustment` | `18.0.1.0.0`                     | Mueve module, flagged in PLAN.md as not yet migrated                          |
-| `l10n_ar_pos_afipws_fe`        | `19.0.1.0.0`                     | POS FE migrated to Odoo 19, installable + tests (PR #2, 2026-08-06)           |
-| `l10n_ar_reports`              | `16.0.1.0.0`                     | Same — pending migration                                                      |
-| `l10n_ar_afipws`               | `18.0.1.0.0`                     | Old module name; renamed upstream → `l10n_ar_fiscal_ws` (now at `19.0.1.0.0`) |
-| `l10n_ar_afipws_fe`            | `18.0.2.0.0`                     | Old name → `l10n_ar_fiscal_ws_fe` (now `19.0.1.0.0`)                          |
-| `l10n_ar_tax_ratio`            | `18.0.1.0.0`                     | Needs version bump / migration check                                          |
-| `account_payment_multi`        | `18.0.1.1.0`                     | Needs version bump / migration check                                          |
-| `account_financial_amount`     | `13.0.1.0.0`                     | Very old version string carried forward                                       |
+| ------------------------------ | -------------------------------- | ---------------------------------------------------------------------------- |
+| `l10n_ar_inflation_adjustment` | `18.0.1.0.0`                     | Views already migrated; Odoo-19 fixes + version bump in progress             |
+| `l10n_ar_reports`              | `16.0.1.0.0`                     | Genuinely unmigrated Odoo-16 code (tree views, `attrs=`, `states=`)          |
+| `account_payment_multi`        | `18.0.1.1.0`                     | Syntax already 19-clean; only the version string needs a bump                |
+| `account_financial_amount`     | `13.0.1.0.0`                     | Very old version string; one `attrs=` in `wizard/res_config_settings_views.xml` |
+| `l10n_ar_tax_ratio`            | (orphan copy in `custom-addons/`)| Dropped upstream in the 19.0 re-import — NO submodule source; stale dir should be deleted |
 | `om_*` (odooapps)              | `1.0.x`, `1.4`, `19.0.0.0`, etc. | odoomates uses its own non-OCA version scheme; not a bug                      |
+
+Note: `l10n_ar_afipws` / `l10n_ar_afipws_fe` no longer exist — the renamed
+`l10n_ar_fiscal_ws` (19.0.1.8.1) / `l10n_ar_fiscal_ws_fe` (19.0.1.1.0) replaced
+them and the stale `custom-addons/` copies were already deleted.
 
 There is a **backward-compatibility shim** `l10n_ar_tax_backward_compatibility`
 (depends only on `l10n_ar_tax`) — install it where old `l10n_ar_tax` behavior
@@ -811,25 +826,31 @@ There is no type-checker configured. `mypy` / `pyright` are not set up.
      Other submodules (`odoo-union`, `odooapps`, `bank-statement-import`,
      `account-reconcile`) are third-party (Mueve-TEC / odoomates / OCA); treat
      them as read-only unless you have push rights there.
-     `odoo-union` is currently checked out in a **detached HEAD** state at
-     commit `93d26f6` — check out its `19.0` branch before committing to it.
+     `odoo-union` is currently checked out on the **feature branch
+     `feat/uid-char-to-int`** (not `19.0`) — check out the right branch before
+     committing there.
 3. **`[FIX-adhoc] <module>: <description>`** is the required commit-message
    prefix for in-place fixes to `adhoc-modules/` inside `odoo-argentina`
    (rhymes with OCA's `[FIX]` convention but signals "local patch on vendored
    upstream, not sent upstream"). Audit them with:
    `git -C submodules/odoo-argentina log --grep='^\[FIX-adhoc\]' --name-only -- adhoc-modules/`.
-4. **Migration-incomplete modules** that will not work cleanly on Odoo 19 yet
-   (because their code is still Odoo 18/16):
-   `l10n_ar_inflation_adjustment` (18.0.1.0.0), `l10n_ar_reports` (16.0.1.0.0),
-   `l10n_ar_tax_ratio` (18.0.1.0.0), `account_payment_multi` (18.0.1.1.0),
-   `account_financial_amount` (13.0.1.0.0). They are present in `custom-addons/`
-   but may fail to install / upgrade. (`l10n_ar_pos_afipws_fe` was migrated to
-   19.0 in PR #2 and is now installable.) When asked to migrate one, the
+4. **Migration-incomplete modules** (remaining, as of 2026-09-04):
+   `l10n_ar_inflation_adjustment` (18.0.1.0.0 — views done, Odoo-19 fixes in
+   progress), `l10n_ar_reports` (16.0.1.0.0 — genuinely unmigrated),
+   `account_payment_multi` (18.0.1.1.0 — version bump only),
+   `account_financial_amount` (13.0.1.0.0 — one `attrs=` left).
+   `l10n_ar_pos_afipws_fe` was migrated to 19.0 in PR #2 and is installable.
+   `l10n_ar_tax_ratio` is an **orphan**: dropped upstream in the 19.0
+   re-import, so it has no submodule source — only a stale `custom-addons/`
+   copy that `copy_addons.sh` will never prune (it still has a manifest);
+   delete it manually. When asked to migrate one, the
    typical Odoo-19 changes are:
    view `tree`→`list`, `attrs`→inline `invisible`/`readonly`/`required`,
    `states=` dropdown-removal, `name_*` → `<field name="..."/>` in views,
    `_post_init_hook(env)` / `post_init_hook(cr, e)` signature alignment, and
    recomputing/storing any field whose compute depends on changed APIs.
+   Python-side: `read_group(domain, fields, groupby)` → `_read_group`
+   (deprecated but still working in 19; prefer the new API).
 5. **Renamed modules**: `l10n_ar_afipws` → `l10n_ar_fiscal_ws` and
    `l10n_ar_afipws_fe` → `l10n_ar_fiscal_ws_fe` (done upstream by adhoc-dev's
    migration branch `19.0-mig-MAQ`, PR #92 to ingadhoc). Both old and new
