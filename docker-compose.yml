@@ -2,13 +2,13 @@ services:
   web:
     build:
       context: .
-    image: soltec-odoo19-desarrollo:1.0
+    image: soltec-localdev-odoo19:1.0
     depends_on:
       - db
     ports:
       - "8069:8069"
     command:
-      - "--addons-path=/mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons"
+      - "--addons-path=/mnt/custom-addons,/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons"
     volumes:
       - ./custom-addons:/mnt/custom-addons
       - odoo-web-data:/var/lib/odoo
