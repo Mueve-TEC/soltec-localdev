@@ -53,6 +53,19 @@ Git identity:
 - Commit style in this repo: bracketed prefixes
   (`[CHORE]`, `[DOC]`, `[REFACT]`, `[FIX]`, …).
 
+Branch model & source of truth:
+
+- **The durable work lives in the `submodules/` repos.** Module code is
+  committed and pushed inside each submodule; this supermodule only bumps the
+  gitlink pointer to record which revision is in use.
+- **`19.0` is the generic base branch** — a reusable local-development
+  environment template with no project-specific modules.
+- **Project/development branches** (e.g. `19.0-<project>`) are *utility*
+  branches used to track a development effort until it is finished. They are
+  not necessarily merged back into the base, and they are **not** the source of
+  truth for module code. When the effort ends, the persistent result already
+  lives in the submodules (and their own remotes), not in the branch.
+
 ## Skills
 
 Skills provide specialized instructions/workflows for specific tasks. They are
@@ -356,8 +369,11 @@ make format    # autofix (ruff + prettier), won't fail
    tracked placeholder (added in `42ded27`) that keeps the addons path valid
    while `submodules/` has no real modules. Keep it until you add your first
    real submodule, then it can be removed.
-10. **Branch model**: develop on `19.0`. Don't mix module commits between
-    Odoo-version branches. Only commit/push when explicitly asked.
+10. **Branch model**: `19.0` is the generic base/environment branch. Do project
+    work on a utility branch (`19.0-<project>`) as a temporary tracker — the
+    lasting code lives in the `submodules/` repos, not in the branch. Don't mix
+    module commits between Odoo-version branches. Only commit/push when
+    explicitly asked.
 11. **Odoo-16 quick check**: a fresh image build silently downgrading to
     "Odoo version 16.0…" in the logs means the Dockerfile `FROM` was changed to
     a wrong tag — verify after `make build`.
