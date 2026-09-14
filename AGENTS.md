@@ -10,10 +10,11 @@
 >
 > 1. Read this document in full before doing anything else.
 > 2. This is a **local development environment**: module sources live in
->    `submodules/` (plain git repos, gitignored). **Edit modules only in
+>    `submodules/` as **tracked git submodules**. **Edit modules only in
 >    `submodules/`**, then run `bash copy_addons.sh` (or `make sync`) to
 >    populate the addons path, then launch/restart the container. `custom-addons/`
->    is generated — never edit it in place.
+>    is generated — never edit it in place. Commit module changes inside the
+>    submodule first, then bump the gitlink in this supermodule.
 > 3. Use `-d <db>` explicitly on every Odoo CLI invocation (no db-filter).
 > 4. Only commit when explicitly asked; commit in this repo's style
 >    (`[CHORE]` / `[DOC]` / `[REFACT]` / `[FIX]`).
@@ -39,9 +40,9 @@ What it is / is not:
   **generated from `submodules/`** before launching the container.
 - The **edit flow** is: edit module sources in `submodules/`, run
   `copy_addons.sh` (or `make sync`) to copy them into `custom-addons/`, then
-  launch/restart the container. `submodules/` holds plain git repos (no
-  gitlinks — `git submodule update` is **not** used); `custom-addons/` is a
-  gitignored, generated addons path.
+  launch/restart the container. `submodules/` holds **tracked git submodules**
+  (each repo is pinned as a gitlink; initialise them with `make submodules-init`
+  after a fresh clone). `custom-addons/` is a gitignored, generated addons path.
 - It is **not** an OpenUpgrade project and has **no CI**. Tests/pre-commit
   only run on demand, locally.
 
@@ -93,10 +94,11 @@ soltec-localdev-odoo19/
 ├── .pre-commit-config.yaml # supermodule: ruff + prettier + check-xml
 ├── README.md               # Spanish, user-facing setup guide
 ├── AGENTS.md               # this file (auto-loaded project context)
-├── .gitignore              # custom-addons, submodules, .qodo, .ruff_cache
+├── .gitignore              # custom-addons, .qodo, .ruff_cache (submodules are tracked)
+├── .gitmodules             # tracked git submodules (references/ + submodules/)
 ├── docker/                 # host Docker installers (debian/ubuntu)
 ├── custom-addons/          # GITIGNORED — generated addons path (bind-mounted, ~50 modules)
-├── submodules/             # GITIGNORED — module sources (plain git repos, no gitlinks)
+├── submodules/             # tracked git submodules — module sources (editable + versioned)
 ├── copy_addons.sh, exclude.txt   # sync submodules/* → custom-addons/ (before launching)
 ```
 
@@ -109,8 +111,9 @@ Key concepts:
   `copy_addons.sh`.
 - The files you can and should version-control are the infra:
   `Dockerfile`, `docker-compose.yml`, `Makefile`, `scripts/`, README/AGENTS,
-  `.pre-commit-config.yaml`, `pyproject.toml`, `.gitignore`. Module code lives
-  in the gitignored `submodules/` repos.
+  `.pre-commit-config.yaml`, `pyproject.toml`, `.gitignore`, `.gitmodules`.
+  Module code lives in the `submodules/` submodules (tracked as gitlinks;
+  commit there first, then update the pointer here).
 
 ## Addons paths & shadowing
 
@@ -179,10 +182,20 @@ Notes:
 
 ## Editing modules (the daily workflow)
 
-> **Getting sources into `submodules/`**: clone/copy each module repo into
-> `submodules/<repo>/` as a **plain directory** (it is gitignored). Do **not**
-> use `git submodule add` — this repo no longer tracks gitlinks, so the
-> `submodules-init` / `submodules-update` Make targets are dead.
+> **Getting sources into `submodules/`**: add each module repo as a **git
+> submodule**: `git submodule add <url> submodules/<repo>`, then
+> `git add .gitmodules submodules/<repo>` and commit. After a fresh clone,
+> initialise them with `make submodules-init`
+> (`git submodule update --init --recursive`); update each to its branch tip with
+> `make submodules-update` (`git submodule update --remote --merge`). Editing
+> files inside a submodule is allowed: commit there first, then bump the gitlink
+> in this supermodule.
+>
+> OCA dependency modules are provisioned the same way. E.g.
+> `submodules/odoo-argentina-envios/delivery-carrier` pins OCA's
+> `delivery-carrier` (branch 19.0) so its modules (`delivery_state`,
+> `delivery_price_method`, `delivery_package_number`, …) are picked up by
+> `copy_addons.sh` and installed from `custom-addons/`.
 
 1. Edit the module source **only in `submodules/<repo>/.../<module>/`**.
 2. Sync it into the addons path **before launching the container**:
@@ -320,8 +333,9 @@ make format    # autofix (ruff + prettier), won't fail
 
 1. **Edit `custom-addons/` only through `submodules/` + `copy_addons.sh`.**
    `custom-addons/` is generated and gitignored; the source of truth for
-   module code lives in `submodules/` (plain git repos, no gitlinks). Never
-   hand-edit `custom-addons/` — re-run the sync and restart instead.
+   module code lives in the `submodules/` git submodules (tracked as gitlinks).
+   Never hand-edit `custom-addons/` — re-run the sync and restart instead.
+   Commit inside the submodule first, then bump the gitlink here.
 2. **Addons-path shadowing**: `/mnt/custom-addons` > `/mnt/extra-addons` >
    core. First path containing the module name wins.
 3. **`mock_module`** placeholder in `custom-addons/` keeps the addons path
@@ -339,9 +353,9 @@ make format    # autofix (ruff + prettier), won't fail
    The older tag `1.0.6-dev` is **Odoo 16** — do not switch the Dockerfile to
    it.
 8. **`mock_repo` placeholder**: `submodules/mock_repo/mock_module/` is a
-   tracked placeholder (added in `42ded27`) that keeps the addons path valid
-   via the sync — keep it while `submodules/` has no real modules, or remove
-   it once real sources exist.
+   tracked placeholder (added in `42ded27`) that kept the addons path valid
+   while `submodules/` had no real sources. Real submodules now exist
+   (`submodules/odoo-argentina-envios`), so it can be removed when convenient.
 10. **Branch model**: develop on `19.0`. Don't mix module commits between
     Odoo-version branches. Only commit/push when explicitly asked.
 11. **Odoo-16 quick check**: a fresh image build silently downgrading to

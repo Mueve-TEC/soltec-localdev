@@ -1,0 +1,11 @@
+[submodule "references/odoo-correo-argentino"]
+	path = references/odoo-correo-argentino
+	url = git@github.com:Mueve-TEC/odoo-correo-argentino.git
+[submodule "references/delivery-carrier"]
+	path = references/delivery-carrier
+	url = git@github.com:OCA/delivery-carrier.git
+	branch = 19.0
+[submodule "submodules/odoo-argentina-envios"]
+	path = submodules/odoo-argentina-envios
+	url = git@github.com:Mueve-TEC/odoo-argentina-envios.git
+	branch = 19.0
