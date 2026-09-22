@@ -6,18 +6,6 @@
 	path = submodules/odoo-argentina
 	url = git@github.com:Mueve-TEC/odoo-argentina.git
 	branch = 19.0
-[submodule "submodules/odooapps"]
-	path = submodules/odooapps
-	url = git@github.com:odoomates/odooapps.git
-	branch = 19.0
-[submodule "submodules/bank-statement-import"]
-	path = submodules/bank-statement-import
-	url = git@github.com:OCA/bank-statement-import.git
-	branch = 19.0
-[submodule "submodules/account-reconcile"]
-	path = submodules/account-reconcile
-	url = git@github.com:OCA/account-reconcile.git
-	branch = 19.0
 [submodule "submodules/odoo-ocr"]
 	path = submodules/odoo-ocr
 	url = git@github.com:Mueve-TEC/odoo-ocr.git
