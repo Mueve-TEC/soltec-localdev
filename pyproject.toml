@@ -1,9 +1,10 @@
 [tool.ruff]
 # Config base para ruff a nivel supermódulo.
-# Los submódulos tienen sus propios .pre-commit-config.yaml con ruff v0.13.0
-# (ver submodules/bank-statement-import/.pre-commit-config.yaml). Esta config
-# da un piso mínimo para validar Python editado en cualquier parte del árbol
-# cuando se ejecuta `ruff`/`ruff format` manualmente desde la raíz.
+# Los submódulos pueden traer su propio .pre-commit-config.yaml con su versión
+# de ruff (p. ej. submodules/odoo-ocr/.pre-commit-config.yaml, ruff v0.13.0;
+# odoo-argentina y odoo-union usan v0.6.8). Esta config da un piso mínimo para
+# validar Python editado en cualquier parte del árbol cuando se ejecuta
+# `ruff`/`ruff format` manualmente desde la raíz.
 
 line-length = 120
 target-version = "py311"

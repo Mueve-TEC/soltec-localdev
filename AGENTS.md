@@ -3,8 +3,8 @@
 > Reference for AI agents (and humans) working in this repository.
 > Living document — update it when the environment changes.
 > All paths/commands below were verified against the working tree at
-> `/home/ezeluduena/proyectos/odoo-unc/facturacion/soltec-localdev19-factura`
-> on branch `19.0`.
+> `/home/ezeluduena/proyectos/odoo-unc/migracion/soltec-localdev-odoo19`
+> on branch `19.0-dev`.
 
 > **When passing this file to an agent**, instruct it to:
 >
@@ -49,7 +49,8 @@ What it is / is not:
 Git identity:
 
 - Remote: `git@github.com:Mueve-TEC/soltec-localdev.git`
-- Current branch: `19.0` (per-Odoo-version branches are the norm).
+- Current branch: `19.0-dev` (per-Odoo-version branches are the norm; `19.0`
+  is the generic base branch).
 - Commit style in this repo: bracketed prefixes
   (`[CHORE]`, `[DOC]`, `[REFACT]`, `[FIX]`, …).
 
@@ -60,11 +61,26 @@ Branch model & source of truth:
   gitlink pointer to record which revision is in use.
 - **`19.0` is the generic base branch** — a reusable local-development
   environment template with no project-specific modules.
-- **Project/development branches** (e.g. `19.0-<project>`) are *utility*
+- **`19.0-dev` (this branch)** carries the project's actual submodules — see
+  [Tracked submodules](#tracked-submodules) below.
+- **Project/development branches** (e.g. `19.0-<project>`) are _utility_
   branches used to track a development effort until it is finished. They are
   not necessarily merged back into the base, and they are **not** the source of
   truth for module code. When the effort ends, the persistent result already
   lives in the submodules (and their own remotes), not in the branch.
+
+### Tracked submodules
+
+| Submodule                   | Upstream                                      | Branch | Purpose                                                                                                                              |
+| --------------------------- | --------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `submodules/odoo-argentina` | `git@github.com:Mueve-TEC/odoo-argentina.git` | 19.0   | Argentine localization: AR tax, ARCA/AFIP web services (`l10n_ar_fiscal_ws*`), payment bundle, `eh_*` mueve-modules, POS FE, reports |
+| `submodules/odoo-ocr`       | `git@github.com:Mueve-TEC/odoo-ocr.git`       | 19.0   | `l10n_ar_factura_qr` (electronic-invoice QR)                                                                                         |
+| `submodules/odoo-union`     | `git@github.com:Mueve-TEC/odoo-union.git`     | 19.0   | Union / "sindicato" modules (affiliation, contributions, benefits, school positions)                                                 |
+| `submodules/payment-sipago` | `git@github.com:Mueve-TEC/payment_sipago.git` | 19.0   | Sipago card-payment provider (web checkout), migrated to Odoo 19                                                                     |
+
+Removed from this branch (were vendored before): `odooapps`, OCA
+`bank-statement-import`, OCA `account-reconcile`. Recoverable from git history
+if ever needed again.
 
 ## Skills
 
@@ -74,16 +90,16 @@ tool, and they are additive (load more than one if a task crosses domains).
 
 ### Which skill to load when
 
-| If the task is…                                              | Load                   |
-| ------------------------------------------------------------ | ---------------------- |
-| Write / review Python models, XML views, wizards, manifests  | `odoo-development`     |
-| Migrate module code between Odoo versions (16/17/18 → 19)    | `odoo-upgrade`         |
-| Write or run `tests/` (TransactionCase, HttpCase, tours)     | `odoo-automated-tests` |
-| Review a module, a Python file, or an XML view               | `odoo-code-review`     |
-| Audit access rules, sudo, SQL injection, controllers         | `odoo-security`        |
-| OCA conventions, scaffold a new OCA-style module             | `odoo-oca-developer`   |
-| Generate test skeletons, mock data, coverage analysis        | `odoo-test`            |
-| Discover / install an agent skill you don't have             | `find-skills`          |
+| If the task is…                                             | Load                   |
+| ----------------------------------------------------------- | ---------------------- |
+| Write / review Python models, XML views, wizards, manifests | `odoo-development`     |
+| Migrate module code between Odoo versions (16/17/18 → 19)   | `odoo-upgrade`         |
+| Write or run `tests/` (TransactionCase, HttpCase, tours)    | `odoo-automated-tests` |
+| Review a module, a Python file, or an XML view              | `odoo-code-review`     |
+| Audit access rules, sudo, SQL injection, controllers        | `odoo-security`        |
+| OCA conventions, scaffold a new OCA-style module            | `odoo-oca-developer`   |
+| Generate test skeletons, mock data, coverage analysis       | `odoo-test`            |
+| Discover / install an agent skill you don't have            | `find-skills`          |
 
 Other skills available in the environment (general purpose): `customize-opencode`
 (editing opencode's own config), `caveman` (compressed output), `grill-me` /
@@ -139,9 +155,9 @@ The web service runs with:
 Order matters — **the first path containing a module name wins**:
 
 1. `/mnt/custom-addons` — host `./custom-addons` (bind mount), **generated
-   from `submodules/` by `copy_addons.sh`**. Starts with only the `mock_module`
-   placeholder; every module with a manifest under `submodules/` is added by
-   the sync.
+   from `submodules/` by `copy_addons.sh`**. Holds the `mock_module` placeholder
+   plus every module with a manifest under `submodules/` (all four tracked
+   submodules sync into it).
 2. `/mnt/extra-addons` — baked into the SOL3 image (read-only, ~123 modules).
    Baseline that a module in `custom-addons/` shadows on name collision.
 3. core addons (`/usr/lib/python3/dist-packages/odoo/addons`).
@@ -157,16 +173,16 @@ Order matters — **the first path containing a module name wins**:
 Everything runs through Docker Compose. The `Makefile` wraps the common flows;
 raw `docker compose` equivalents are shown alongside.
 
-| Action                                          | Make target       | Raw command                           |
-| ----------------------------------------------- | ----------------- | ------------------------------------- |
-| Build the Odoo image (after Dockerfile change)  | `make build`      | `docker compose build --no-cache`     |
-| Start all services (detached)                   | `make up`         | `docker compose up -d`                |
-| Stop services (keeps volumes)                   | `make down`       | `docker compose down`                 |
-| Stop + delete volumes (wipe DB/files)           | `make down-clean` | `docker compose down -v`              |
-| View Odoo logs (follow)                         | `make logs`       | `docker compose logs -f web`          |
-| Service status                                  | `make ps`         | `docker compose ps`                   |
-| Bash inside the Odoo container                  | `make shell`      | `docker compose exec web bash`        |
-| Restart the web service                         | `make restart`    | `docker compose restart web`          |
+| Action                                         | Make target       | Raw command                       |
+| ---------------------------------------------- | ----------------- | --------------------------------- |
+| Build the Odoo image (after Dockerfile change) | `make build`      | `docker compose build --no-cache` |
+| Start all services (detached)                  | `make up`         | `docker compose up -d`            |
+| Stop services (keeps volumes)                  | `make down`       | `docker compose down`             |
+| Stop + delete volumes (wipe DB/files)          | `make down-clean` | `docker compose down -v`          |
+| View Odoo logs (follow)                        | `make logs`       | `docker compose logs -f web`      |
+| Service status                                 | `make ps`         | `docker compose ps`               |
+| Bash inside the Odoo container                 | `make shell`      | `docker compose exec web bash`    |
+| Restart the web service                        | `make restart`    | `docker compose restart web`      |
 
 `make help` lists all targets. Overridable variables: `DB` (default `odoo`),
 `MODULE` (default `base`), `TEST_TAGS`.
@@ -207,8 +223,9 @@ Notes:
 >
 > The same pattern provisions upstream/OCA dependency modules: add the upstream
 > repo as a submodule under `submodules/`; `copy_addons.sh` picks up every
-> module with a manifest it contains. This base branch intentionally ships **no**
-> project-specific submodules — add the ones the current project needs.
+> module with a manifest it contains. This branch already ships the four
+> submodules listed in [Tracked submodules](#tracked-submodules); the generic
+> `19.0` base ships none — add further repos the same way as needed.
 
 1. Edit the module source **only in `submodules/<repo>/.../<module>/`**.
 2. Sync it into the addons path **before launching the container**:
@@ -309,7 +326,7 @@ make odoo-shell DB=<db>  # Python prompt with env/registry inside the container
     -d <db> -u <module> --i18n-overwrite --stop-after-init --http-port 8099
   ```
 - **Empty `msgstr` terms are skipped entirely** by the importer: they neither
-  overwrite nor *remove* an existing (bad) translation. If a DB already has a
+  overwrite nor _remove_ an existing (bad) translation. If a DB already has a
   bogus value for a term you blanked out, delete the language key from the JSONB
   directly:
   ```sql
@@ -334,12 +351,24 @@ make format    # autofix (ruff + prettier), won't fail
 - `submodules/odoo-argentina` carries its own adhoc pre-commit stack; if the
   dir exists, run `make lint-odoo-ar` (or
   `cd submodules/odoo-argentina && pre-commit run --all-files`).
+- `submodules/odoo-ocr` and `submodules/odoo-union` ship their own
+  `.pre-commit-config.yaml`: `cd submodules/<repo> && pre-commit run --all-files`.
+- `submodules/payment-sipago` has no lint config: `ruff check submodules/payment-sipago`.
 - **No type checker** is configured (`mypy`/`pyright` absent).
 
 ## Documentation
 
 - **`README.md`** (root, Spanish) — user-facing setup guide.
 - **`AGENTS.md`** — this file (opencode project context, auto-loaded).
+- Module-level migration/ops docs live **inside the submodules** (the durable
+  source of truth): `submodules/odoo-argentina/MIGRATION_19.md` (18→19
+  backlog + ARCA A5 response-shape reference),
+  `submodules/odoo-argentina/POS_CONTEXT.md` (POS/ARCA error dictionary +
+  homologation setup + test commands),
+  `submodules/odoo-union/MIGRATION_NOTES.md` (do-not-port list + validation
+  checklist). These were salvaged from the supermodule `PLAN.md` /
+  `migration.md` / `POS_context.md` deleted in the `19.0` cleanup — originals
+  remain in git history (`git show ffe54b7:<file>`).
 - `.qodo/` — empty Qodo scaffold (safe to delete).
 
 ## Conventions & Gotchas
@@ -366,17 +395,18 @@ make format    # autofix (ruff + prettier), won't fail
    The older tag `1.0.6-dev` is **Odoo 16** — do not switch the Dockerfile to
    it.
 8. **`mock_repo` placeholder**: `submodules/mock_repo/mock_module/` is a
-   tracked placeholder (added in `42ded27`) that keeps the addons path valid
-   while `submodules/` has no real modules. Keep it until you add your first
-   real submodule, then it can be removed.
-10. **Branch model**: `19.0` is the generic base/environment branch. Do project
-    work on a utility branch (`19.0-<project>`) as a temporary tracker — the
-    lasting code lives in the `submodules/` repos, not in the branch. Don't mix
-    module commits between Odoo-version branches. Only commit/push when
-    explicitly asked.
-11. **Odoo-16 quick check**: a fresh image build silently downgrading to
+   tracked placeholder (added in `42ded27`). This branch now ships real
+   submodules ([Tracked submodules](#tracked-submodules)), so the placeholder is
+   redundant — safe to remove here (delete `submodules/mock_repo`, re-run
+   `copy_addons.sh`); it is only needed on the submodule-less `19.0` base.
+9. **Branch model**: `19.0` is the generic base/environment branch; `19.0-dev`
+   (this branch) tracks the project submodules. Do project work on a utility
+   branch (`19.0-<project>`) as a temporary tracker — the lasting code lives in
+   the `submodules/` repos, not in the branch. Don't mix module commits between
+   Odoo-version branches. Only commit/push when explicitly asked.
+10. **Odoo-16 quick check**: a fresh image build silently downgrading to
     "Odoo version 16.0…" in the logs means the Dockerfile `FROM` was changed to
     a wrong tag — verify after `make build`.
-12. **`arcaws.env.type`** changes apply live (no restart): switching
+11. **`arcaws.env.type`** changes apply live (no restart): switching
     homologation↔production takes effect immediately; an invalid value raises a
     `UserError` (no silent fallback).

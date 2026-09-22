@@ -11,8 +11,8 @@
 # NO cubre el código dentro de submodules/<repo>/... — ese vive en repos
 # git separados. Para lintearlos:
 #   * submodules/odoo-argentina/  → `make lint-odoo-ar` (tiene su propio config, ver AGENTS.md)
-#   * submodules/bank-statement-import/ , account-reconcile/  → `cd <repo> && pre-commit run --all-files`
-#   * submodules/odoo-union/ , odooapps/  → sin config propio; usar `ruff check <path>` manualmente
+#   * submodules/odoo-ocr/ , submodules/odoo-union/  → `cd <repo> && pre-commit run --all-files` (config propio)
+#   * submodules/payment-sipago/  → sin config propio; usar `ruff check <path>` manualmente
 #
 # Instalación (una vez):  pre-commit install
 # Uso manual:             pre-commit run --all-files   (o `make lint`)
