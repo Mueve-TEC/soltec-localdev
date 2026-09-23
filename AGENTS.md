@@ -90,20 +90,53 @@ tool, and they are additive (load more than one if a task crosses domains).
 
 ### Which skill to load when
 
-| If the task is…                                             | Load                   |
-| ----------------------------------------------------------- | ---------------------- |
-| Write / review Python models, XML views, wizards, manifests | `odoo-development`     |
-| Migrate module code between Odoo versions (16/17/18 → 19)   | `odoo-upgrade`         |
-| Write or run `tests/` (TransactionCase, HttpCase, tours)    | `odoo-automated-tests` |
-| Review a module, a Python file, or an XML view              | `odoo-code-review`     |
-| Audit access rules, sudo, SQL injection, controllers        | `odoo-security`        |
-| OCA conventions, scaffold a new OCA-style module            | `odoo-oca-developer`   |
-| Generate test skeletons, mock data, coverage analysis       | `odoo-test`            |
-| Discover / install an agent skill you don't have            | `find-skills`          |
+| If the task is…                                                   | Load                   |
+| ----------------------------------------------------------------- | ---------------------- |
+| Write / review Python models, XML views, wizards, manifests       | `odoo-development`     |
+| Migrate module code between Odoo versions (16/17/18 → 19)         | `odoo-upgrade`         |
+| Write or run `tests/` (TransactionCase, HttpCase, tours)          | `odoo-automated-tests` |
+| Review a module, a Python file, or an XML view                    | `odoo-code-review`     |
+| Audit access rules, sudo, SQL injection, controllers              | `odoo-security`        |
+| OCA conventions, scaffold a new OCA-style module                  | `odoo-oca-developer`   |
+| Generate test skeletons, mock data, coverage analysis             | `odoo-test`            |
+| Discover / install an agent skill you don't have                  | `find-skills`          |
+| House rules for addon code (structure, manifest, ORM, XML, tests) | `odoo-guidelines`      |
+| House rules for `static/src/` JS, Owl templates and SCSS          | `odoo-web-guidelines`  |
+| Review a diff / commit / PR / module against Odoo house rules     | `odoo-review`          |
 
 Other skills available in the environment (general purpose): `customize-opencode`
 (editing opencode's own config), `caveman` (compressed output), `grill-me` /
 `grill-with-docs` (design interviews). Use `find-skills` to install more.
+
+#### Official Odoo skill library
+
+The **official** Odoo skills from [`odoo/odoo` → `skills/`](https://github.com/odoo/odoo/tree/master/skills)
+(`master` branch) are installed globally in `~/.agents/skills/`. They are
+**interdependent** — install/load them together:
+
+- `odoo-guidelines` — house rules for addon code (module structure, manifest,
+  Python/ORM, fields, controllers, XML/data, QWeb reports, access rights,
+  performance, tests). Points to `guidelines/*.md` sub-files.
+- `odoo-web-guidelines` — house rules for web assets (`static/src/` JavaScript,
+  Owl templates, SCSS), with `guidelines/*.md` sub-files.
+- `odoo-review` — review workflow that dispatches each changed file to the
+  matching `odoo-guidelines` / `odoo-web-guidelines` / `odoo-security` material.
+- `odoo-security` — official security audit (access control, injection, sudo,
+  controller auth/CSRF, file access, deserialization, XSS/Markup).
+
+Notes:
+
+- The official `odoo-security` **replaced** the previous third-party
+  `odoo-security` skill (backed up at `~/.agents/skills/odoo-security.bak-*`).
+  Prefer the official one; it is what `odoo-review` links to.
+- The official library **overlaps** the pre-existing third-party Odoo skills
+  above (`odoo-development`, `odoo-code-review`, `odoo-security`). When they
+  disagree, treat the official `odoo-*` house rules as authoritative; the
+  `odoo-upgrade` / `odoo-automated-tests` / `odoo-oca-developer` / `odoo-test`
+  skills remain the go-to for version migration, tests, and OCA scaffolding.
+- Sourced from `master`, not the `19.0` branch (the `skills/` dir does not exist
+  on `19.0`); copied manually, so `.skill-lock.json` does not track them. To
+  refresh, re-clone `odoo/odoo` with sparse checkout of `skills/` and re-copy.
 
 ```python
 # Pseudocode the agent should follow at task start
