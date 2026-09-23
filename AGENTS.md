@@ -354,6 +354,10 @@ make format    # autofix (ruff + prettier), won't fail
 - `submodules/odoo-ocr` and `submodules/odoo-union` ship their own
   `.pre-commit-config.yaml`: `cd submodules/<repo> && pre-commit run --all-files`.
 - `submodules/payment-sipago` has no lint config: `ruff check submodules/payment-sipago`.
+- **No git hooks are installed** (`core.hooksPath` unset) — `git commit` runs
+  the linter only if pre-commit is invoked manually. Lint changed files with
+  `pre-commit run ruff --files <path> && pre-commit run ruff-format --files <path>`
+  before committing.
 - **No type checker** is configured (`mypy`/`pyright` absent).
 
 ## Documentation
@@ -410,3 +414,21 @@ make format    # autofix (ruff + prettier), won't fail
 11. **`arcaws.env.type`** changes apply live (no restart): switching
     homologation↔production takes effect immediately; an invalid value raises a
     `UserError` (no silent fallback).
+12. **ARCA request templates are data, not code**: the WSFE request body lives
+    in `l10n_ar_fiscal_ws{,_fe}/data/arcaws.xml` but is **stored in the DB** as
+    `arcaws.method.definition_dict` and evaluated with `safe_eval`. Editing the
+    XML without running `-u <module>` leaves the DB executing the **old**
+    template. After any change to those files: `copy_addons.sh` + restart +
+    `-u l10n_ar_fiscal_ws,l10n_ar_fiscal_ws_fe` on **every** DB using the stack
+    (in this harness `test_pos`, `pos_fix`, `admin` — confirm the list with the
+    human before a deploy). Full dictionary of ARCA error codes and homologation
+    setup: `submodules/odoo-argentina/POS_CONTEXT.md`.
+13. **pyOpenSSL is pinned at 26.4.0 on this image** and dropped the old
+    `crypto.X509Req` / `crypto.dump_certificate_request` API (CSR generation must
+    use the `cryptography` package, as in `arcaws_certificate_alias.py`), and its
+    malformed-PEM message is `"no start line"` (not the legacy
+    `"Expecting: CERTIFICATE"`). Do not assume the pyafipws-era `crypto.*` API
+    exists.
+14. **Don't commit loose planning notes** (e.g. `update_plan*.md`): durable
+    outcome belongs in the submodule docs (`POS_CONTEXT.md`, `MIGRATION_19.md`)
+    or in the PR/issue, not as tracked scratch files in this repo.
