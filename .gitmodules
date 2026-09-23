@@ -14,3 +14,7 @@
 	path = submodules/payment-sipago
 	url = git@github.com:Mueve-TEC/payment_sipago.git
 	branch = 19.0
+[submodule "submodules/odoo-argentina-envios"]
+	path = submodules/odoo-argentina-envios
+	url = git@github.com:Mueve-TEC/odoo-argentina-envios.git
+	branch = 19.0
