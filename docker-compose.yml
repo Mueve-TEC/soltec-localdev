@@ -6,7 +6,7 @@ services:
     depends_on:
       - db
     ports:
-      - "8069:8069"
+      - "8070:8069"
     command:
       - "--addons-path=/mnt/custom-addons,/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons"
     volumes:
@@ -38,7 +38,7 @@ services:
     depends_on:
       - db
     ports:
-      - "5050:80"
+      - "5051:80"
     networks:
       - odoo-network
     volumes:

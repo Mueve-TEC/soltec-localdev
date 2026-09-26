@@ -33,7 +33,7 @@ Para levantarlo localmente:
 docker compose up -d
 ```
 
-Luego en un navegador ingresamos a [localhost:8069](http://localhost:8069).
+Luego en un navegador ingresamos a [localhost:8070](http://localhost:8070).
 
 ## Agregar módulos
 
@@ -67,7 +67,7 @@ docker compose up -d
 
 Para un mejor manejo y visualización de las bases de datos se incluye _Pgadmin4_, para utilizarlo seguimos los siguientes pasos:
 
-1. Con la imagen corriendo nos dirigimos a [localhost:5050](http://localhost:5050) para abrir la interfaz gráfica de _Pgadmin4_ y nos logueamos con las credenciales configuradas en el [`docker-compose.yml`](/docker-compose.yml):
+1. Con la imagen corriendo nos dirigimos a [localhost:5051](http://localhost:5051) para abrir la interfaz gráfica de _Pgadmin4_ y nos logueamos con las credenciales configuradas en el [`docker-compose.yml`](/docker-compose.yml):
    - Email Address / Username : `admin@hola.com`
    - Password: `admin`
 

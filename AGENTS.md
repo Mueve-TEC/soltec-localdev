@@ -223,13 +223,13 @@ raw `docker compose` equivalents are shown alongside.
 Services and ports:
 
 - **web** — Odoo 19 (SOL3 image, local tag `soltec-localdev-odoo19:1.0`).
-  - Host port **8069** → http://localhost:8069
+  - Host port **8070** → http://localhost:8070
   - Addons path (see above); bind mount `./custom-addons:/mnt/custom-addons`;
     named volume `odoo-web-data:/var/lib/odoo`.
   - DB env: `HOST=db`, `USER=odoo`, `PASSWORD=odoo`.
 - **db** — `postgres:14`, user/db/pass `odoo`/`odoo` (init DB `postgres`),
   host `db:5432` on the `odoo-network`; volume `postgres-data`.
-- **pgadmin** — `dpage/pgadmin4`, host port **5050** → http://localhost:5050,
+- **pgadmin** — `dpage/pgadmin4`, host port **5051** → http://localhost:5051,
   login `admin@hola.com` / `admin`; connect to host `db`, port `5432`,
   user `odoo`, password `odoo`.
 
@@ -422,7 +422,7 @@ make format    # autofix (ruff + prettier), won't fail
    valid addons directory"). Remove it only when real modules are present.
 4. **Always pass `-d <db>`** and the DB connection args on CLI runs; use
    `--http-port 8099` (a free port) so `-i`/`-u`/`--test-enable` runs don't
-   collide with the running web container's 8069.
+   collide with the running web container's 8070.
 5. **Makefile `ADDONS_PATH` is missing `/mnt/extra-addons`** (only
    `custom-addons` + core). For modules that live only in the image, use the
    raw command with the full path. Recommend fixing the Makefile.
