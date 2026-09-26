@@ -1,0 +1,4 @@
+[submodule "submodules/odoo-argentina"]
+	path = submodules/odoo-argentina
+	url = git@github.com:Mueve-TEC/odoo-argentina.git
+	branch = 16.0
