@@ -62,6 +62,13 @@ if [ -d "$TMP/filestore" ]; then
   docker cp "$TMP/filestore/." "$WEB:/var/lib/odoo/filestore/$DB_NAME/"
 fi
 
+# docker cp conserva el uid/gid del host (normalmente 1000), pero Odoo corre
+# como usuario "odoo" (uid 101). Sin esto no puede escribir los bundles de
+# assets regenerados y endpoints como /web/assets/.../point_of_sale.assets.js
+# devuelven 500, dejando el POS sin abrir.
+echo ">> Ajustando permisos del filestore..."
+docker exec -u root "$WEB" chown -R odoo:odoo "/var/lib/odoo/filestore/$DB_NAME"
+
 echo ">> Neutralizando la base (evita mails y llamadas AFIP productivas)..."
 docker exec "$WEB" odoo neutralize -d "$DB_NAME" \
   --db_host=db --db_user=odoo --db_password=odoo \
