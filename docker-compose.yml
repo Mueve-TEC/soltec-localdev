@@ -20,13 +20,13 @@ services:
       - odoo-network
 
   db:
-    image: postgres:14
+    image: postgres:16
     environment:
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=odoo
       - POSTGRES_DB=postgres
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data-16:/var/lib/postgresql/data
     networks:
       - odoo-network
 
@@ -46,7 +46,7 @@ services:
 
 volumes:
   odoo-web-data:
-  postgres-data:
+  postgres-data-16:
   pgadmin-data:
 
 networks:
