@@ -51,17 +51,43 @@ git submodule add <link-al-repositorio>
 cd ..
 ```
 
-3. Ejecutamos el script para copiar el contenido necesario de los módulos al directorio [**`custom-addons/`**](/custom-addons/):
+1. Ejecutamos el script para copiar el contenido necesario de los módulos al directorio [**`custom-addons/`**](/custom-addons/):
 
 ```bash
 bash copy_addons.sh
 ```
 
-4. Por último levantamos nuevamente el container con los módulos nuevos agregados:
+1. Por último levantamos nuevamente el container con los módulos nuevos agregados:
 
 ```bash
 docker-compose up -d
 ```
+
+## Restaurar una base de datos
+
+> **Importante:** si el backup proviene de un entorno de **producción**, contiene
+> certificados y claves AFIP. La restauración es local, pero conviene **neutralizar**
+> la base para que no envíe mails ni se conecte a los web services de AFIP productivos.
+
+El dump de referencia viene de *PostgreSQL 16*, por eso el servicio `db` del
+[`docker-compose.yml`](/docker-compose.yml) usa `postgres:16`. Las claves privadas
+(`afipws_certificate_alias.key`) y los certificados (`afipws_certificate.crt`) se
+guardan como texto dentro del dump, **no** en el filestore.
+
+Restauración automática:
+
+```bash
+bash docker/restore_db.sh backup_db.zip Nombre_Base_de_Datos
+```
+
+El script extrae el `dump.sql` y el `filestore/`, **dropea y recrea** la base, importa
+con el `psql` del contenedor web, mueve el filestore y ejecuta `odoo neutralize`.
+
+Si se usa la interfaz web (`/web/database/restore`), hay que tener en cuenta que
+*Odoo* **no sobrescribe** una base existente: si un intento anterior dejó la base a
+medias, el siguiente restore falla con `Database already exists` y luego la base
+queda sin inicializar (`Database ... not initialized`, `KeyError: 'ir.http'`). En ese
+caso hay que **borrar la base primero** (o usar el script de arriba).
 
 ## Conexión de la base de datos con *Pgadmin4*
 
@@ -117,13 +143,13 @@ sudo bash docker/install_debian.sh
 sudo groupadd docker
 ```
 
-2. Agregar tu usuario al grupo.
+1. Agregar tu usuario al grupo.
 
 ```bash
 sudo usermod -aG docker $USER
 ```
 
-3. Para confirmar los cambios podemos cerrar sesión y volver a abrirla o ejecutar el siguiente comando.
+1. Para confirmar los cambios podemos cerrar sesión y volver a abrirla o ejecutar el siguiente comando.
 
 ```bash
 newgrp docker
