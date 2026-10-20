@@ -253,10 +253,9 @@ make install DB=<db> MODULE=l10n_ar,l10n_ar_tax,<...>
 make upgrade DB=<db> MODULE=<module_name>
 ```
 
-> Gotcha: the `Makefile` `ADDONS_PATH` is `=/mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons`
-> and does **not** include `/mnt/extra-addons`. If the module you install/upgrade
-> lives only in the image, use the raw form above (with `/mnt/extra-addons`).
-> Consider fixing `ADDONS_PATH` in the Makefile to match the compose command.
+> Gotcha: the `Makefile` `ADDONS_PATH` now matches the compose command
+> (`/mnt/custom-addons,/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons`),
+> so `make install/upgrade/test` also see modules baked into the image.
 
 ### Running tests
 
@@ -342,6 +341,82 @@ make format    # autofix (ruff + prettier), won't fail
 - **`AGENTS.md`** — this file (opencode project context, auto-loaded).
 - `.qodo/` — empty Qodo scaffold (safe to delete).
 
+## Parallel ticket worktrees (multiple opencode sessions)
+
+Run one ticket per **git worktree**, each with its own Odoo web container, host
+port, database and filestore, while sharing the main checkout's **Postgres
+server**, Docker network and image. This lets several opencode sessions (one
+terminal each) work without touching each other's tree, DB or port.
+
+| Resource | Ownership |
+| -------- | --------- |
+| Git worktree / branches | per ticket: `<main>/../soltec-tickets/<slug>` |
+| Odoo `web` container | per ticket (`docker compose -p tkt-<slug>`) |
+| Database `t_<slug>` | per ticket, hosted in the **main stack's** Postgres |
+| Filestore volume | per ticket, seeded from the golden DB's filestore |
+| Postgres, image, network | shared, owned by the main checkout |
+
+One-time setup (in the main checkout):
+
+```bash
+make build                      # image soltec-localdev-odoo19:1.0
+make golden-refresh SRC_DB=admin   # creates DB `ticket_template` + filestore
+```
+
+Daily flow:
+
+```bash
+make ticket-new SLUG=fix-arca-qr   # worktree + branches + DB + filestore + web
+cd ../soltec-tickets/fix-arca-qr
+opencode
+```
+
+Inside the ticket worktree the usual targets work and are pinned to the ticket
+DB (`.ticket/env.mk`): `make sync`, `make upgrade MODULE=<m>`,
+`make test MODULE=<m>`, `make shell`, `make ticket-dbshell`, `make ticket-logs`.
+Lifecycle: `make ticket-up | ticket-down | ticket-list | ticket-done SLUG=...`
+(`KEEP=1` keeps everything and only stops the web; `FORCE=1` bypasses the
+unpushed-commits guard). `make golden-refresh` re-seeds the golden DB from
+`SRC_DB` (default `admin`).
+
+How it works / rules:
+
+1. `ticket-new` creates the worktree from the main checkout's `HEAD`, then
+   initialises the submodules and creates a branch `19.0-<slug>` in **each**
+   submodule at `origin/19.0` (falling back to the recorded revision offline).
+   It commits the resulting gitlink bump on the ticket branch.
+2. The ticket DB is cloned with `CREATE DATABASE t_<slug> TEMPLATE
+   ticket_template`; the golden DB must stay unused (Postgres refuses to clone a
+   DB with connections). The filestore is copied from `ticket_template` into the
+   ticket's own volume.
+3. The ticket `web` joins the main stack's external network, so `HOST=db`
+   resolves; it does **not** start its own Postgres. The main `db` service must
+   be up — `make ticket-up`/`ticket-new` start it if needed.
+4. Each ticket has an untracked `.ticket/` directory (`env`, `env.mk`,
+   `TICKET.md`) and a generated `.env` (compose project, port, network,
+   image). Never commit them; the root `.gitignore` covers `.env` and
+   `.ticket/`.
+5. **In a ticket session, never edit the main checkout** (the sibling directory
+   shown in `.ticket/TICKET.md`); edit `submodules/` in the worktree and run
+   `make sync`.
+6. The image is shared. A ticket that changes the `Dockerfile` must set
+   `IMAGE_TAG=tkt-<slug>` in its `.env` and build it; otherwise a rebuild
+   changes the image for every stack.
+7. Finishing a ticket: push/merge the submodule branches, bump the gitlinks in
+   the main checkout, then `make ticket-done SLUG=...`. It refuses to remove the
+   worktree if any submodule has uncommitted or unpushed commits (those branches
+   live in the worktree's per-worktree gitdir and disappear with it).
+8. Same-module tickets still conflict on merge: rebase `19.0-<slug>` onto
+   `origin/19.0`, merge PRs in order, then update the gitlink in the main
+   checkout (`git submodule update --remote --merge`) and commit it.
+9. Main `make down-clean` is interlocked: it refuses to wipe the shared Postgres
+   while ticket worktrees or running `tkt-*` projects exist (`FORCE=1`
+   overrides). Stopping the main stack (`make down`) also stops every ticket's
+   DB; `make ticket-up` recovers.
+10. Host ports are derived from the slug (`8100 + crc32 % 400`, probing for
+    conflicts) and recorded in `.ticket/env`; 5050/5051/5432/8069/8070/8099 are
+    reserved.
+
 ## Conventions & Gotchas
 
 1. **Edit `custom-addons/` only through `submodules/` + `copy_addons.sh`.**
@@ -357,9 +432,9 @@ make format    # autofix (ruff + prettier), won't fail
 4. **Always pass `-d <db>`** and the DB connection args on CLI runs; use
    `--http-port 8099` (a free port) so `-i`/`-u`/`--test-enable` runs don't
    collide with the running web container's 8069.
-5. **Makefile `ADDONS_PATH` is missing `/mnt/extra-addons`** (only
-   `custom-addons` + core). For modules that live only in the image, use the
-   raw command with the full path. Recommend fixing the Makefile.
+5. **`Makefile` `ADDONS_PATH` includes `/mnt/extra-addons`** (same as the
+   compose command), so image-baked modules are visible to `make
+   install/upgrade/test` too.
 6. **Translations**: plain `-u` doesn't overwrite; use `--i18n-overwrite`;
    empty `msgstr` terms are skipped (never clean existing DB values).
 7. **Image versions**: `muevetec/soltec-odoo:19.0.6-dev` is Odoo 19 (correct).
