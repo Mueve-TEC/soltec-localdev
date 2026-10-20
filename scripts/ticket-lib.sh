@@ -50,7 +50,7 @@ sanitize_name() {
     sed -E 's/[^a-z0-9_-]+//g; s/^[^a-z0-9]+//'
 }
 
-MAIN_ROOT=$(ticket_common_dir)
+MAIN_ROOT=${MAIN_ROOT:-$(ticket_common_dir)}
 [[ -f "$MAIN_ROOT/docker-compose.yml" ]] ||
   die "main checkout not found at $MAIN_ROOT (missing docker-compose.yml)"
 

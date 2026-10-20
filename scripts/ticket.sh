@@ -20,6 +20,7 @@
 #   GOLDEN_DB      (default: ticket_template)
 #   IMAGE_TAG      (default: soltec-localdev-odoo19:1.0)
 #   MAIN_PROJECT   (default: basename of the main checkout)
+#   MAIN_ROOT      (default: the main checkout, via git common dir)
 #   BASE_REF       (default: HEAD of the main checkout)  — used by `new`
 #   SRC_DB         (default: admin)                      — used by `golden-refresh`
 
