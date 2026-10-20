@@ -31,7 +31,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"__manifest__.py" = ["E", "F", "W"]
+"__manifest__.py" = ["B018", "E", "F", "W"]
 "migrations/*" = ["E", "F", "W"]
 
 [tool.ruff.format]
