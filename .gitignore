@@ -1,3 +1,6 @@
 custom-addons
 .qodo
 .ruff_cache
+# Ticket worktrees: generated per-ticket compose/env/state (never commit).
+.env
+.ticket/

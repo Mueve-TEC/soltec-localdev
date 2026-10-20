@@ -5,18 +5,25 @@
 # MODULE (ej. `make upgrade MODULE=l10n_ar_tax`).
 #
 # Variables:
-#   DB        Nombre de la base de datos Odoo (default: odoo)
+#   DB        Nombre de la base de datos Odoo (default: odoo; en un worktree de
+#             ticket se toma automáticamente de .ticket/env.mk)
 #   MODULE    Módulo target para install/upgrade/test (default: base)
 #   TEST_TAGS Filtro --test-tags extra (default: vacío = todos los tests del módulo)
+#   SLUG      Ticket para los targets ticket-* (opcional dentro del worktree)
 
-DB      ?= odoo
+# Escrito por `make ticket-new`; ausente en el checkout principal.
+-include .ticket/env.mk
+
+DB      ?= $(if $(TICKET_DB),$(TICKET_DB),odoo)
 MODULE  ?= base
 TEST_TAGS ?=
 HTTP_PORT ?= 8099
+SLUG ?=
+SRC_DB ?= admin
 ODOO_RUN   = $(DOCKER_COMPOSE) exec web
 ODOO_RUN_RM = $(DOCKER_COMPOSE) run --rm web
 
-ADDONS_PATH = /mnt/custom-addons,/usr/lib/python3/dist-packages/odoo/addons
+ADDONS_PATH = /mnt/custom-addons,/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons
 
 # Base Odoo CLI command with proper addons-path and DB connection args.
 # Use this for all CLI invocations (Gotcha #12).
@@ -42,6 +49,7 @@ down:           ## Detener servicios
 	$(DOCKER_COMPOSE) down
 
 down-clean:     ## Detener y BORRAR volúmenes (DB, filestore, pgadmin)
+	@bash scripts/ticket.sh guard-down-clean
 	$(DOCKER_COMPOSE) down -v
 
 logs:           ## Tail de logs de Odoo
@@ -129,6 +137,45 @@ format:         ## Aplicar ruff format + prettier a archivos del supermódulo
 
 lint-odoo-ar:   ## Pre-commit (stack adhoc completo) dentro de submodules/odoo-argentina
 	@cd submodules/odoo-argentina && pre-commit run --all-files
+
+# ---------------------------------------------------------------------------
+# Tickets en worktrees paralelos (ver AGENTS.md, "Parallel ticket worktrees")
+# ---------------------------------------------------------------------------
+.PHONY: ticket-new ticket-up ticket-down ticket-logs ticket-shell ticket-dbshell \
+	ticket-upgrade ticket-test ticket-list ticket-done golden-refresh
+
+ticket-new:     ## Crear ticket completo: worktree + branches + DB + filestore + web
+	@bash scripts/ticket.sh new $(SLUG)
+
+ticket-up:      ## Levantar el web del ticket (inicia db del stack principal si hace falta)
+	@bash scripts/ticket.sh up $(SLUG)
+
+ticket-down:    ## Detener el web del ticket (conserva DB y volúmenes)
+	@bash scripts/ticket.sh down $(SLUG)
+
+ticket-logs:    ## Logs del web del ticket
+	@bash scripts/ticket.sh logs $(SLUG)
+
+ticket-shell:   ## Bash dentro del container web del ticket
+	@bash scripts/ticket.sh shell $(SLUG)
+
+ticket-dbshell: ## psql sobre la DB del ticket
+	@bash scripts/ticket.sh dbshell $(SLUG)
+
+ticket-upgrade: ## Actualizar MODULE en la DB del ticket
+	@MODULE='$(MODULE)' bash scripts/ticket.sh upgrade $(SLUG)
+
+ticket-test:    ## Correr tests de MODULE en la DB del ticket
+	@MODULE='$(MODULE)' TEST_TAGS='$(TEST_TAGS)' bash scripts/ticket.sh test $(SLUG)
+
+ticket-list:    ## Listar tickets, DBs y estado del web
+	@bash scripts/ticket.sh list
+
+ticket-done:    ## Eliminar ticket (worktree + DB + volúmenes); KEEP=1 / FORCE=1
+	@bash scripts/ticket.sh done $(SLUG)
+
+golden-refresh: ## Recrear la DB golden desde SRC_DB (default: admin)
+	@SRC_DB='$(SRC_DB)' bash scripts/ticket.sh golden-refresh
 
 # ---------------------------------------------------------------------------
 # Help
