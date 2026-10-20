@@ -220,15 +220,15 @@ clone_filestore() {
     -e DB="$db" \
     -e SRC="$template" \
     -v "${MAIN_PROJECT}_odoo-web-data:/src:ro" \
-    -v "${project}_odoo-web-data:/dst" \
+    -v "${project}_odoo-web-data:/var/lib/odoo" \
     "$image" -c '
       set -e
-      mkdir -p /dst/filestore
-      rm -rf "/dst/filestore/$DB"
+      mkdir -p /var/lib/odoo/filestore
+      rm -rf "/var/lib/odoo/filestore/$DB"
       if [ -d "/src/filestore/$SRC" ]; then
-        cp -a "/src/filestore/$SRC" "/dst/filestore/$DB"
+        cp -a "/src/filestore/$SRC" "/var/lib/odoo/filestore/$DB"
       else
-        mkdir -p "/dst/filestore/$DB"
+        mkdir -p "/var/lib/odoo/filestore/$DB"
       fi
     '
 }

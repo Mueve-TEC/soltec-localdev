@@ -136,15 +136,14 @@ cmd_new() {
   (cd "$dir" && bash copy_addons.sh)
 
   port=$(find_free_port "$slug" "$slug")
+  write_ticket_files "$dir" "$slug" "$project" "$db" "$port" "$DEFAULT_IMAGE_TAG" "$base_sha"
+  load_ticket "$slug"
 
   info "cloning $GOLDEN_DB -> $db"
   db_create_from_template "$db" "$GOLDEN_DB"
 
   info "cloning filestore ($GOLDEN_DB -> $db) into $project volume"
   clone_filestore "$db" "$GOLDEN_DB" "$project" "$DEFAULT_IMAGE_TAG"
-
-  write_ticket_files "$dir" "$slug" "$project" "$db" "$port" "$DEFAULT_IMAGE_TAG" "$base_sha"
-  load_ticket "$slug"
 
   local mods
   mods=$(installed_custom_modules "$db" "$dir/custom-addons")
@@ -384,15 +383,15 @@ cmd_golden_refresh() {
     --entrypoint sh \
     -e SRC="$src" \
     -e DST="$GOLDEN_DB" \
-    -v "${MAIN_PROJECT}_odoo-web-data:/data" \
+    -v "${MAIN_PROJECT}_odoo-web-data:/var/lib/odoo" \
     "$DEFAULT_IMAGE_TAG" -c '
       set -e
-      mkdir -p /data/filestore
-      rm -rf "/data/filestore/$DST"
-      if [ -d "/data/filestore/$SRC" ]; then
-        cp -a "/data/filestore/$SRC" "/data/filestore/$DST"
+      mkdir -p /var/lib/odoo/filestore
+      rm -rf "/var/lib/odoo/filestore/$DST"
+      if [ -d "/var/lib/odoo/filestore/$SRC" ]; then
+        cp -a "/var/lib/odoo/filestore/$SRC" "/var/lib/odoo/filestore/$DST"
       else
-        mkdir -p "/data/filestore/$DST"
+        mkdir -p "/var/lib/odoo/filestore/$DST"
       fi
     '
 
