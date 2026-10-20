@@ -104,10 +104,17 @@ tool, and they are additive (load more than one if a task crosses domains).
 | House rules for addon code (structure, manifest, ORM, XML, tests) | `odoo-guidelines`      |
 | House rules for `static/src/` JS, Owl templates and SCSS          | `odoo-web-guidelines`  |
 | Review a diff / commit / PR / module against Odoo house rules     | `odoo-review`          |
+| Commit message format / branch choice / PR hygiene (Odoo repos)   | `odoo-git`             |
 
-Other skills available in the environment (general purpose): `customize-opencode`
-(editing opencode's own config), `caveman` (compressed output), `grill-me` /
-`grill-with-docs` (design interviews). Use `find-skills` to install more.
+These skills are installed globally in `~/.agents/skills/`, **except**
+`odoo-code-review`, `odoo-oca-developer` and `odoo-test` (not currently
+installed — add them with `find-skills`, or fall back to `odoo-review` /
+`odoo-guidelines` for review and `odoo-automated-tests` for tests).
+
+Other skills installed globally (general purpose): `customize-opencode`
+(editing opencode's own config), `grill-me` / `grill-with-docs` (design
+interviews). `caveman` (compressed output) is not installed; use `find-skills`
+to add it or discover others.
 
 #### Official Odoo skill library
 
@@ -124,6 +131,8 @@ The **official** Odoo skills from [`odoo/odoo` → `skills/`](https://github.com
   matching `odoo-guidelines` / `odoo-web-guidelines` / `odoo-security` material.
 - `odoo-security` — official security audit (access control, injection, sudo,
   controller auth/CSRF, file access, deserialization, XSS/Markup).
+- `odoo-git` — Odoo git conventions: commit message format (`[TAG] scope:`),
+  branch choice/naming, and pull-request hygiene.
 
 Notes:
 
@@ -137,7 +146,12 @@ Notes:
   skills remain the go-to for version migration, tests, and OCA scaffolding.
 - Sourced from `master`, not the `19.0` branch (the `skills/` dir does not exist
   on `19.0`); copied manually, so `.skill-lock.json` does not track them. To
-  refresh, re-clone `odoo/odoo` with sparse checkout of `skills/` and re-copy.
+  refresh, re-clone `odoo/odoo` with sparse checkout of `skills/` (all five
+  dirs: `odoo-git`, `odoo-guidelines`, `odoo-review`, `odoo-security`,
+  `odoo-web-guidelines`) and re-copy.
+- `grill-with-docs` was installed through `npx skills add
+  mattpocock/skills@grill-with-docs -g -y`, so it **is** tracked in
+  `~/.agents/.skill-lock.json`; refresh it with `npx skills update`.
 
 ```python
 # Pseudocode the agent should follow at task start
