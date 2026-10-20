@@ -366,7 +366,7 @@ cmd_golden_refresh() {
   db_exists "$src" || die "source database '$src' does not exist"
 
   tmp=$(mktemp)
-  trap 'rm -f "$tmp"' EXIT
+  trap 'rm -f "${tmp:-}"' EXIT
 
   info "dumping $src"
   main_compose exec -T db pg_dump -U odoo --format=custom "$src" >"$tmp"
