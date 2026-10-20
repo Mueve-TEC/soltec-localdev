@@ -139,6 +139,9 @@ cmd_new() {
   write_ticket_files "$dir" "$slug" "$project" "$db" "$port" "$DEFAULT_IMAGE_TAG" "$base_sha"
   load_ticket "$slug"
 
+  info "creating the ticket compose project (volume + container)"
+  ticket_compose create web
+
   info "cloning $GOLDEN_DB -> $db"
   db_create_from_template "$db" "$GOLDEN_DB"
 
