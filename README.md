@@ -63,6 +63,55 @@ bash copy_addons.sh
 docker compose up -d
 ```
 
+## Trabajar en varios tickets en paralelo
+
+Cada ticket puede correr en su propio _worktree_ de _Git_ con su propio contenedor de _Odoo_, puerto, base de datos y filestore, compartiendo el servidor _Postgres_, la red de _Docker_ y la imagen del checkout principal. Así se pueden abrir varias sesiones de _opencode_ (una por terminal) sin que se pisen el código, la base ni los puertos.
+
+Preparación inicial (una sola vez, en el checkout principal):
+
+```bash
+make build                        # imagen soltec-localdev-odoo19:1.0
+make golden-refresh SRC_DB=admin  # crea la DB golden `ticket_template`
+```
+
+Crear un ticket:
+
+```bash
+make ticket-new SLUG=fix-arca-qr
+cd ../soltec-tickets/fix-arca-qr
+opencode
+```
+
+`ticket-new` crea el _worktree_, la rama `19.0-<slug>` (en el superproyecto y en cada submódulo), la base `t_<slug>` clonada de la golden, un volumen de filestore propio y el contenedor _Odoo_ en un puerto libre (8100-8499). El puerto y la URL se muestran al finalizar.
+
+Dentro del worktree, los comandos de siempre quedan apuntados al ticket:
+
+```bash
+make sync                        # submodules/ -> custom-addons/
+make upgrade MODULE=l10n_ar_tax
+make test MODULE=l10n_ar_tax
+make ticket-logs
+make ticket-dbshell
+make ticket-up                   # levantar el web (y la DB principal si hace falta)
+make ticket-down                 # detener el web (conserva DB y volúmenes)
+```
+
+Listar y finalizar:
+
+```bash
+make ticket-list
+make ticket-done SLUG=fix-arca-qr   # KEEP=1 conserva todo; FORCE=1 omite el control de commits
+```
+
+Notas:
+
+- El servidor _Postgres_ es el del checkout principal: si se detiene (`make down`), los tickets quedan sin base; `make ticket-up` lo vuelve a levantar.
+- `make down-clean` en el checkout principal se niega a borrar los volúmenes mientras existan tickets (`FORCE=1` lo omite).
+- Cada sesión debe trabajar **solo** dentro de su worktree; no editar el checkout principal.
+- Si un ticket modifica el `Dockerfile`, definir `IMAGE_TAG=tkt-<slug>` en su `.env` y construir esa imagen para no pisar la compartida.
+- `ticket-done` no elimina el worktree si hay commits sin pushear en los submódulos (usar `FORCE=1` para forzarlo).
+- Más detalle: sección "Parallel ticket worktrees" en [`AGENTS.md`](/AGENTS.md).
+
 ## Conexión de la base de datos con _Pgadmin4_
 
 Para un mejor manejo y visualización de las bases de datos se incluye _Pgadmin4_, para utilizarlo seguimos los siguientes pasos:
