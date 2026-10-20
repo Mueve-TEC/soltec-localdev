@@ -71,13 +71,13 @@ Branch model & source of truth:
 
 ### Tracked submodules
 
-| Submodule                   | Upstream                                      | Branch | Purpose                                                                                                                              |
-| --------------------------- | --------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `submodules/odoo-argentina` | `git@github.com:Mueve-TEC/odoo-argentina.git` | 19.0   | Argentine localization: AR tax, ARCA/AFIP web services (`l10n_ar_fiscal_ws*`), payment bundle, `eh_*` mueve-modules, POS FE, reports |
-| `submodules/odoo-argentina-envios` | `git@github.com:Mueve-TEC/odoo-argentina-envios.git` | 19.0 | Delivery / Correo Argentino shipping modules |
-| `submodules/odoo-ocr`       | `git@github.com:Mueve-TEC/odoo-ocr.git`       | 19.0   | `l10n_ar_factura_qr` (electronic-invoice QR)                                                                                         |
-| `submodules/odoo-union`     | `git@github.com:Mueve-TEC/odoo-union.git`     | 19.0   | Union / "sindicato" modules (affiliation, contributions, benefits, school positions)                                                 |
-| `submodules/payment-sipago` | `git@github.com:Mueve-TEC/payment_sipago.git` | 19.0   | Sipago card-payment provider (web checkout), migrated to Odoo 19                                                                     |
+| Submodule                          | Upstream                                             | Branch | Purpose                                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `submodules/odoo-argentina`        | `git@github.com:Mueve-TEC/odoo-argentina.git`        | 19.0   | Argentine localization: AR tax, ARCA/AFIP web services (`l10n_ar_fiscal_ws*`), payment bundle, `eh_*` mueve-modules, POS FE, reports |
+| `submodules/odoo-argentina-envios` | `git@github.com:Mueve-TEC/odoo-argentina-envios.git` | 19.0   | Delivery / Correo Argentino shipping modules                                                                                         |
+| `submodules/odoo-ocr`              | `git@github.com:Mueve-TEC/odoo-ocr.git`              | 19.0   | `l10n_ar_factura_qr` (electronic-invoice QR)                                                                                         |
+| `submodules/odoo-union`            | `git@github.com:Mueve-TEC/odoo-union.git`            | 19.0   | Union / "sindicato" modules (affiliation, contributions, benefits, school positions)                                                 |
+| `submodules/payment-sipago`        | `git@github.com:Mueve-TEC/payment_sipago.git`        | 19.0   | Sipago card-payment provider (web checkout), migrated to Odoo 19                                                                     |
 
 Removed from this branch (were vendored before): `odooapps`, OCA
 `bank-statement-import`, OCA `account-reconcile`. Recoverable from git history
@@ -150,7 +150,7 @@ Notes:
   dirs: `odoo-git`, `odoo-guidelines`, `odoo-review`, `odoo-security`,
   `odoo-web-guidelines`) and re-copy.
 - `grill-with-docs` was installed through `npx skills add
-  mattpocock/skills@grill-with-docs -g -y`, so it **is** tracked in
+mattpocock/skills@grill-with-docs -g -y`, so it **is** tracked in
   `~/.agents/.skill-lock.json`; refresh it with `npx skills update`.
 
 ```python
@@ -429,13 +429,13 @@ port, database and filestore, while sharing the main checkout's **Postgres
 server**, Docker network and image. This lets several opencode sessions (one
 terminal each) work without touching each other's tree, DB or port.
 
-| Resource | Ownership |
-| -------- | --------- |
-| Git worktree / branches | per ticket: `<main>/../soltec-tickets/<slug>` |
-| Odoo `web` container | per ticket (`docker compose -p tkt-<slug>`) |
-| Database `t_<slug>` | per ticket, hosted in the **main stack's** Postgres |
-| Filestore volume | per ticket, seeded from the golden DB's filestore |
-| Postgres, image, network | shared, owned by the main checkout |
+| Resource                 | Ownership                                           |
+| ------------------------ | --------------------------------------------------- |
+| Git worktree / branches  | per ticket: `<main>/../soltec-tickets/<slug>`       |
+| Odoo `web` container     | per ticket (`docker compose -p tkt-<slug>`)         |
+| Database `t_<slug>`      | per ticket, hosted in the **main stack's** Postgres |
+| Filestore volume         | per ticket, seeded from the golden DB's filestore   |
+| Postgres, image, network | shared, owned by the main checkout                  |
 
 One-time setup (in the main checkout):
 
@@ -467,7 +467,7 @@ How it works / rules:
    submodule at `origin/19.0` (falling back to the recorded revision offline).
    It commits the resulting gitlink bump on the ticket branch.
 2. The ticket DB is cloned with `CREATE DATABASE t_<slug> TEMPLATE
-   ticket_template`; the golden DB must stay unused (Postgres refuses to clone a
+ticket_template`; the golden DB must stay unused (Postgres refuses to clone a
    DB with connections). The filestore is copied from `ticket_template` into the
    ticket's own volume.
 3. The ticket `web` joins the main stack's external network, so `HOST=db`
@@ -515,7 +515,7 @@ How it works / rules:
    collide with the running web container's 8070.
 5. **`Makefile` `ADDONS_PATH` includes `/mnt/extra-addons`** (same as the
    compose command), so image-baked modules are visible to `make
-   install/upgrade/test` too.
+install/upgrade/test` too.
 6. **Translations**: plain `-u` doesn't overwrite; use `--i18n-overwrite`;
    empty `msgstr` terms are skipped (never clean existing DB values).
 7. **Image versions**: `muevetec/soltec-odoo:19.0.6-dev` is Odoo 19 (correct).

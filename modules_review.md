@@ -40,28 +40,28 @@ runs. Commit only when asked, in each repo's own log style.
 
 **Progress at a glance**
 
-| Module | Review | Findings | Tests | Repo pre-commit |
-|--------|--------|----------|-------|-----------------|
-| `delivery_correo_argentino` | done | all fixed (MER-07 deferred) | 27 green | added |
-| the other 10 | pending | — | per §5.2 | 4 repos pending |
+| Module                      | Review  | Findings                    | Tests    | Repo pre-commit |
+| --------------------------- | ------- | --------------------------- | -------- | --------------- |
+| `delivery_correo_argentino` | done    | all fixed (MER-07 deferred) | 27 green | added           |
+| the other 10                | pending | —                           | per §5.2 | 4 repos pending |
 
 ## 1. Scope — module inventory (verified 2026-09-23)
 
 Paths are relative to the repo root. `py/xml/js` = file counts.
 
-| # | Module | Repo (submodule) | Path | py/xml/js | Tests today | i18n | Security | Version | Flags from inventory |
-|---|--------|------------------|------|-----------|--------------|------|----------|---------|----------------------|
-| 1 | `l10n_ar_fiscal_ws` | odoo-argentina | `submodules/odoo-argentina/adhoc-modules/odoo-argentina-ce/l10n_ar_fiscal_ws` | 20/15/**1** | 5 files (padron, certificate, data_urls) | es_AR.po | csv | 19.0.1.8.2 | ARCA core; `safe_eval` request templates (DB-stored, gotcha AGENTS.md #12); only module with `static/src` JS |
-| 2 | `l10n_ar_fiscal_ws_fe` | odoo-argentina | `…/odoo-argentina-ce/l10n_ar_fiscal_ws_fe` | 12/6/0 | 4 files (move, currency, qr, rejection) | es_AR.po | **no csv** | 19.0.1.1.1 | Verify it only `_inherits`/`_inherit`s models with existing ACLs |
-| 3 | `l10n_ar_pos_afipws_fe` | odoo-argentina | `…/odoo-argentina-ce/l10n_ar_pos_afipws_fe` | 6/0/0 | 1 file (pos_order) | es_AR.po | no csv | 19.0.1.0.1 | No views/XML — pure Python inheritance over POS |
-| 4 | `l10n_ar_factura_qr` | odoo-ocr | `submodules/odoo-ocr/l10n_ar_factura_qr` | 6/7/0 | **none** | es_AR.po | xml + csv | 19.0.1.0.1 | **LGPL-3** (all others AGPL-3) — confirm intentional; deps image-baked (pyzbar, pdf2image, numpy) |
-| 5 | `l10n_ar_inflation_adjustment` | odoo-argentina | `submodules/odoo-argentina/mueve-modules/l10n_ar_inflation_adjustment` | 7/7/0 | **none** | **none** | csv | 19.0.1.0.0 | No tests AND no i18n; wizard-driven accounting logic |
-| 6 | `union_affiliation` | odoo-union | `submodules/odoo-union/union_affiliation` | 21/15/0 | 3 files (incl. `test_security.py`) | es_AR.po | csv | 19.0.1.2.0 | Has `migrations/` + `controllers/` + `wizards/`; base for modules 7–9 |
-| 7 | `union_benefit_request` | odoo-union | `submodules/odoo-union/union_benefit_request` | 20/14/0 | 2 files | es_AR.po | csv | 19.0.1.1.0 | **`license` key not found** — verify/fix in manifest |
-| 8 | `union_contribution` | odoo-union | `submodules/odoo-union/union_contribution` | 16/11/0 | 2 files | es_AR.po | csv | 19.0.1.1.0 | **`license` key not found** — verify/fix |
-| 9 | `union_school_position` | odoo-union | `submodules/odoo-union/union_school_position` | 18/8/0 | 4 files | es_AR.po | csv | 19.0.1.1.0 | **`license` key not found** — verify/fix |
-| 10 | `payment_sipago` | payment-sipago | `submodules/payment-sipago/payment_sipago` | 14/3/0 | 5 files (incl. `common.py`, integration) | es_AR.po | **no csv** | 19.0.1.0.0 | Webhook/checkout controller (CSRF/token review!); repo has `*_response_example.json` fixtures + `.env_example` |
-| 11 | `delivery_correo_argentino` | **odoo-argentina-envios** | `submodules/odoo-argentina-envios/delivery_correo_argentino` | 10/3/0 | 1 file | **none** | **no security/ dir** | 19.0.1.0.0 | Repo is a 6th submodule NOT yet in AGENTS.md's tracked-submodules table |
+| #   | Module                         | Repo (submodule)          | Path                                                                          | py/xml/js   | Tests today                              | i18n     | Security             | Version    | Flags from inventory                                                                                           |
+| --- | ------------------------------ | ------------------------- | ----------------------------------------------------------------------------- | ----------- | ---------------------------------------- | -------- | -------------------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | `l10n_ar_fiscal_ws`            | odoo-argentina            | `submodules/odoo-argentina/adhoc-modules/odoo-argentina-ce/l10n_ar_fiscal_ws` | 20/15/**1** | 5 files (padron, certificate, data_urls) | es_AR.po | csv                  | 19.0.1.8.2 | ARCA core; `safe_eval` request templates (DB-stored, gotcha AGENTS.md #12); only module with `static/src` JS   |
+| 2   | `l10n_ar_fiscal_ws_fe`         | odoo-argentina            | `…/odoo-argentina-ce/l10n_ar_fiscal_ws_fe`                                    | 12/6/0      | 4 files (move, currency, qr, rejection)  | es_AR.po | **no csv**           | 19.0.1.1.1 | Verify it only `_inherits`/`_inherit`s models with existing ACLs                                               |
+| 3   | `l10n_ar_pos_afipws_fe`        | odoo-argentina            | `…/odoo-argentina-ce/l10n_ar_pos_afipws_fe`                                   | 6/0/0       | 1 file (pos_order)                       | es_AR.po | no csv               | 19.0.1.0.1 | No views/XML — pure Python inheritance over POS                                                                |
+| 4   | `l10n_ar_factura_qr`           | odoo-ocr                  | `submodules/odoo-ocr/l10n_ar_factura_qr`                                      | 6/7/0       | **none**                                 | es_AR.po | xml + csv            | 19.0.1.0.1 | **LGPL-3** (all others AGPL-3) — confirm intentional; deps image-baked (pyzbar, pdf2image, numpy)              |
+| 5   | `l10n_ar_inflation_adjustment` | odoo-argentina            | `submodules/odoo-argentina/mueve-modules/l10n_ar_inflation_adjustment`        | 7/7/0       | **none**                                 | **none** | csv                  | 19.0.1.0.0 | No tests AND no i18n; wizard-driven accounting logic                                                           |
+| 6   | `union_affiliation`            | odoo-union                | `submodules/odoo-union/union_affiliation`                                     | 21/15/0     | 3 files (incl. `test_security.py`)       | es_AR.po | csv                  | 19.0.1.2.0 | Has `migrations/` + `controllers/` + `wizards/`; base for modules 7–9                                          |
+| 7   | `union_benefit_request`        | odoo-union                | `submodules/odoo-union/union_benefit_request`                                 | 20/14/0     | 2 files                                  | es_AR.po | csv                  | 19.0.1.1.0 | **`license` key not found** — verify/fix in manifest                                                           |
+| 8   | `union_contribution`           | odoo-union                | `submodules/odoo-union/union_contribution`                                    | 16/11/0     | 2 files                                  | es_AR.po | csv                  | 19.0.1.1.0 | **`license` key not found** — verify/fix                                                                       |
+| 9   | `union_school_position`        | odoo-union                | `submodules/odoo-union/union_school_position`                                 | 18/8/0      | 4 files                                  | es_AR.po | csv                  | 19.0.1.1.0 | **`license` key not found** — verify/fix                                                                       |
+| 10  | `payment_sipago`               | payment-sipago            | `submodules/payment-sipago/payment_sipago`                                    | 14/3/0      | 5 files (incl. `common.py`, integration) | es_AR.po | **no csv**           | 19.0.1.0.0 | Webhook/checkout controller (CSRF/token review!); repo has `*_response_example.json` fixtures + `.env_example` |
+| 11  | `delivery_correo_argentino`    | **odoo-argentina-envios** | `submodules/odoo-argentina-envios/delivery_correo_argentino`                  | 10/3/0      | 1 file                                   | **none** | **no security/ dir** | 19.0.1.0.0 | Repo is a 6th submodule NOT yet in AGENTS.md's tracked-submodules table                                        |
 
 Cross-module consumption (review with "code the diff never shows" in mind):
 
@@ -84,18 +84,18 @@ at `~/.agents/skills/odoo-security/SKILL.md` — read that file directly. The
 
 ### 2.1 Dispatch matrix (whole-module review = the "diff" is the module tree)
 
-| Files in module | Skill / material to read |
-|-----------------|--------------------------|
-| `__manifest__.py` | `odoo-guidelines` → `guidelines/manifest.md` |
-| `models/*.py`, `wizards/*.py` | `odoo-guidelines` → `guidelines/python.md`, `orm.md`, `fields.md`, `performance.md` |
-| `controllers/*.py` | `odoo-guidelines` → `guidelines/controllers.md` **+** official `odoo-security` → "Routes: auth, POST, CSRF" |
-| `views/*.xml`, `data/*.xml`, `security/*` | `odoo-guidelines` → `guidelines/xml.md`, `security.md` |
-| QWeb reports (`report/`) | `odoo-guidelines` → `guidelines/reports.md` |
-| `tests/*` | `odoo-guidelines` → `guidelines/tests.md` + this plan's §5 |
-| `i18n/*.po` | `oca-checks-po` hook + `odoo-guidelines` → "Translate only static literals" (msgids in **English**, Spanish via `es_AR.po`) |
-| `static/src/**` (JS/Owl/SCSS) | `odoo-web-guidelines` → `guidelines/javascript.md`, `scss.md` (today only `l10n_ar_fiscal_ws` has 1 JS + 1 JS-XML file) |
-| `migrations/**` | `odoo-guidelines` → `guidelines/stable.md` + `odoo-oca-developer` → OpenUpgrade patterns |
-| Everything security-sensitive | Official `odoo-security` sweep table: `sudo(`/`with_user(`, `cr.execute`/`SQL(`, domain injection, public (non-`_`) RPC-callable methods, `Markup(`/`t-raw`, password/token fields (`groups=`, `related_sudo`), `open()` vs `file_open`, `safe_eval`, `pickle`, `getattr/setattr`, secret comparison with `consteq`, mutable default args |
+| Files in module                           | Skill / material to read                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `__manifest__.py`                         | `odoo-guidelines` → `guidelines/manifest.md`                                                                                                                                                                                                                                                                                              |
+| `models/*.py`, `wizards/*.py`             | `odoo-guidelines` → `guidelines/python.md`, `orm.md`, `fields.md`, `performance.md`                                                                                                                                                                                                                                                       |
+| `controllers/*.py`                        | `odoo-guidelines` → `guidelines/controllers.md` **+** official `odoo-security` → "Routes: auth, POST, CSRF"                                                                                                                                                                                                                               |
+| `views/*.xml`, `data/*.xml`, `security/*` | `odoo-guidelines` → `guidelines/xml.md`, `security.md`                                                                                                                                                                                                                                                                                    |
+| QWeb reports (`report/`)                  | `odoo-guidelines` → `guidelines/reports.md`                                                                                                                                                                                                                                                                                               |
+| `tests/*`                                 | `odoo-guidelines` → `guidelines/tests.md` + this plan's §5                                                                                                                                                                                                                                                                                |
+| `i18n/*.po`                               | `oca-checks-po` hook + `odoo-guidelines` → "Translate only static literals" (msgids in **English**, Spanish via `es_AR.po`)                                                                                                                                                                                                               |
+| `static/src/**` (JS/Owl/SCSS)             | `odoo-web-guidelines` → `guidelines/javascript.md`, `scss.md` (today only `l10n_ar_fiscal_ws` has 1 JS + 1 JS-XML file)                                                                                                                                                                                                                   |
+| `migrations/**`                           | `odoo-guidelines` → `guidelines/stable.md` + `odoo-oca-developer` → OpenUpgrade patterns                                                                                                                                                                                                                                                  |
+| Everything security-sensitive             | Official `odoo-security` sweep table: `sudo(`/`with_user(`, `cr.execute`/`SQL(`, domain injection, public (non-`_`) RPC-callable methods, `Markup(`/`t-raw`, password/token fields (`groups=`, `related_sudo`), `open()` vs `file_open`, `safe_eval`, `pickle`, `getattr/setattr`, secret comparison with `consteq`, mutable default args |
 
 ### 2.2 Per-module review workflow (uniform loop)
 
@@ -120,7 +120,7 @@ at `~/.agents/skills/odoo-security/SKILL.md` — read that file directly. The
    contracts (XML ids, context keys, `arcaws` templates) across the other
    module trees and `/mnt/extra-addons`.
 8. **Record** findings in §8 with severity, `file:line`, defect, failure
-   scenario, fix, and the guideline section it applies (or *judgement*).
+   scenario, fix, and the guideline section it applies (or _judgement_).
    Every finding ends with a **Guidelines read:** line (odoo-review §Report).
 
 ### 2.3 Severity scale (shared with the security scanners)
@@ -133,13 +133,13 @@ regression test (§5.2).
 
 ### 3.1 Current state (verified)
 
-| Repo | Config | pre-commit-hooks | OCA odoo-pre-commit-hooks | ruff | pylint-odoo | rstcheck | prettier |
-|------|--------|------------------|---------------------------|------|------------|----------|----------|
-| odoo-argentina | `.pre-commit-config.yaml` (adhoc stack at root) | v5.0.0 | v0.0.35 | v0.6.8 (120) | v9.1.3 (`--disable=E0401`, max-line 120) | v6.2.1 | no (deliberate: adhoc-subtree parity) |
-| odoo-union | clone of the adhoc stack | v5.0.0 | v0.0.35 | v0.6.8 (120) | v9.1.3 (+ explicit disable set, max-line 120) | v6.2.1 | no |
-| odoo-ocr | combined stack | v6.0.0 | v0.0.35 | **v0.13.0** (`ruff.toml`: **88**, single quotes) | v9.1.3 (`.pylintrc`, max-line **88**) | v6.2.1 | yes (3.6.2 + `@prettier/plugin-xml` 3.4.2) |
-| payment-sipago | **none** (only `ruff.toml`, `.pretierrc.json`, `package.json` at root) | — | — | — | — | — | unused |
-| odoo-argentina-envios | **none** (only `.ruff.toml`) -> `.pre-commit-config.yaml` added 2026-09-23 (Phase 0, this repo) | v6.0.0 | v0.0.35 | v0.13.0 (88) | v9.1.3 (shared disable set) | v6.2.1 | yes (3.6.2 + plugin-xml) |
+| Repo                  | Config                                                                                          | pre-commit-hooks | OCA odoo-pre-commit-hooks | ruff                                             | pylint-odoo                                   | rstcheck | prettier                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------- | ---------------- | ------------------------- | ------------------------------------------------ | --------------------------------------------- | -------- | ------------------------------------------ |
+| odoo-argentina        | `.pre-commit-config.yaml` (adhoc stack at root)                                                 | v5.0.0           | v0.0.35                   | v0.6.8 (120)                                     | v9.1.3 (`--disable=E0401`, max-line 120)      | v6.2.1   | no (deliberate: adhoc-subtree parity)      |
+| odoo-union            | clone of the adhoc stack                                                                        | v5.0.0           | v0.0.35                   | v0.6.8 (120)                                     | v9.1.3 (+ explicit disable set, max-line 120) | v6.2.1   | no                                         |
+| odoo-ocr              | combined stack                                                                                  | v6.0.0           | v0.0.35                   | **v0.13.0** (`ruff.toml`: **88**, single quotes) | v9.1.3 (`.pylintrc`, max-line **88**)         | v6.2.1   | yes (3.6.2 + `@prettier/plugin-xml` 3.4.2) |
+| payment-sipago        | **none** (only `ruff.toml`, `.pretierrc.json`, `package.json` at root)                          | —                | —                         | —                                                | —                                             | —        | unused                                     |
+| odoo-argentina-envios | **none** (only `.ruff.toml`) -> `.pre-commit-config.yaml` added 2026-09-23 (Phase 0, this repo) | v6.0.0           | v0.0.35                   | v0.13.0 (88)                                     | v9.1.3 (shared disable set)                   | v6.2.1   | yes (3.6.2 + plugin-xml)                   |
 
 Drift to eliminate: ruff v0.6.8 vs v0.13.0; line-length 88 vs 120; pylint arg
 sets differ; prettier in two repos only; `payment-sipago` still with no hooks.
@@ -157,7 +157,7 @@ One template replicated in **all 5 repos** (pre-commit runs per git toplevel;
   and `oca-checks-po` with `--disable=po-pretty-format` (single `--disable`
   flag each — last-wins argparse semantics).
 - **ruff-pre-commit v0.13.0** (`ruff` + `ruff-format`, `--fix
-  --exit-non-zero-on-fix`). Config: a per-repo `pyproject.toml` with
+--exit-non-zero-on-fix`). Config: a per-repo `pyproject.toml` with
   `target-version = py311`, `select = E,F,W,I,UP,B`, `ignore = E501,B008`,
   per-file-ignores for `__manifest__.py` and `migrations/*`, and
   `[tool.ruff.format] quote-style = "preserve"` (no full-tree quote rewrite).
@@ -229,12 +229,12 @@ revisit once all 5 repos share the pinned hook versions.
      accept the drift once `quote-style=preserve` is the rule).
    - No git hooks at supermodule level (AGENTS.md) — lint manually before
      every commit: `pre-commit run ruff --files <path> && pre-commit run
-     ruff-format --files <path>`.
+ruff-format --files <path>`.
 
 ## 4. Review execution order
 
 - **Phase 0 — Tooling & housekeeping** (§3.3). Everything after lands
-  pre-commit-clean. *Status: odoo-argentina-envios done; 4 repos pending.*
+  pre-commit-clean. _Status: odoo-argentina-envios done; 4 repos pending._
 - **Phase 1 — Security sweep, all 11 modules** (fast, scripted + manual):
   run the `.bak` scanners per module, judge hits against official
   `odoo-security`. Known hotspots to eyeball first: `payment_sipago` webhook
@@ -261,10 +261,10 @@ revisit once all 5 repos share the pinned hook versions.
 ### 5.1 Common rules (every module)
 
 - **Framework/location:** `tests/test_<feature>.py`, imported from
-  `tests/__init__.py`;   class `Test<Feature>` inheriting `TransactionCase`
+  `tests/__init__.py`; class `Test<Feature>` inheriting `TransactionCase`
   (`SavepointCase` is deprecated in recent versions — `TransactionCase` is
   the one to use); `HttpCase` only where controllers/portal
-  behavior must be verified (union_\*, payment_sipago).
+  behavior must be verified (union\_\*, payment_sipago).
 - **Tags:** every class `@tagged('post_install', '-at_install')` **plus the
   module name** (`@tagged('l10n_ar_fiscal_ws')`, …) so the harness can narrow:
   `make test MODULE=<m> TEST_TAGS=/<m>`.
@@ -298,19 +298,19 @@ revisit once all 5 repos share the pinned hook versions.
 
 ### 5.2 Per-module targets
 
-| Module | Today | Target suite (type) | Key cases / mocks |
-|--------|-------|---------------------|-------------------|
-| `l10n_ar_fiscal_ws` | 5 files | extend (TransactionCase) | `arcaws.method` `definition_dict` `safe_eval` templates; `env.type` switch incl. `UserError` on invalid (AGENTS.md #11); certificate/CSR via `cryptography` (pyOpenSSL 26.4.0 pin, #13); ARCA error-code mapping as table-driven tests (dictionary in `POS_CONTEXT.md`); padrón (existing) keep green; the 1 JS file: assess a hoot test only if non-trivial |
-| `l10n_ar_fiscal_ws_fe` | 4 files | extend (TransactionCase) | invoice FE flow with mocked WSFE; A5 homologation response shapes (fixtures from `MIGRATION_19.md`); rejection paths (existing `test_rejection.py` keep green); CAE allocation; currency rate edge cases |
-| `l10n_ar_pos_afipws_fe` | 1 file | extend (TransactionCase; tour only if UI logic appears) | POS order → FE with mocked fiscal backend; error surfacing to POS; `pos.config` fiscal fields validation |
-| `l10n_ar_factura_qr` | **none** | new suite (TransactionCase) | `_parse_arca_qr_url` float normalization (`cuit: 30717930076.0` → int); doc-code → `move_type` mapping (3/8/13 → in_invoice/in_refund); `_prepare_invoice_line_commands` account fallback chain; decoder `new=True` vs `new=False` (empty-field preservation, gotcha #2 of the module AGENTS.md); `ocr.arca.scan` states + manager-only access; synthetic ARCA QR-url fixtures (no real PDFs needed); keep `TESTING_19.md` as the E2E manual complement |
-| `l10n_ar_inflation_adjustment` | **none** | new suite (TransactionCase) | wizard run over fixture index (IPC/ICL) periods; adjustment move balancing; **idempotency/second-run**; multi-period + boundary dates; security test on the wizard |
-| `union_affiliation` | 3 files | extend | period boundary edge cases; wizard flows; migration smoke via `make test-install`; controllers → HttpCase (auth) |
-| `union_contribution` | 2 files | extend | contribution computation incl. **rounding**; period aggregation; security matrix extension |
-| `union_benefit_request` | 2 files | extend | approval state machine; wizard validation errors; HttpCase for controller auth |
-| `union_school_position` | 4 files | extend | registration-date rules; affiliate extension (existing) keep green |
-| `payment_sipago` | 5 files | extend + harden | provider config constraints; transaction state machine (pending/done/cancelled/refund); **webhook controller HttpCase with mocked outbound** — csrf strategy, token compare (`consteq`), no sudo-on-request-params; `test_sipago_integration.py` must prove it never hits the network (patch at transport level) |
-| `delivery_correo_argentino` | 1 file | **done — 26 tests** (§8.11) | mocked `_session.request` for MiCorreo/PaqAr (token, rate, labels, tracking, agencies), parcel/timezone/error cases, and security (field `groups` + log redaction). Still open: `es_AR.po` |
+| Module                         | Today    | Target suite (type)                                     | Key cases / mocks                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------ | -------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `l10n_ar_fiscal_ws`            | 5 files  | extend (TransactionCase)                                | `arcaws.method` `definition_dict` `safe_eval` templates; `env.type` switch incl. `UserError` on invalid (AGENTS.md #11); certificate/CSR via `cryptography` (pyOpenSSL 26.4.0 pin, #13); ARCA error-code mapping as table-driven tests (dictionary in `POS_CONTEXT.md`); padrón (existing) keep green; the 1 JS file: assess a hoot test only if non-trivial                                                                                            |
+| `l10n_ar_fiscal_ws_fe`         | 4 files  | extend (TransactionCase)                                | invoice FE flow with mocked WSFE; A5 homologation response shapes (fixtures from `MIGRATION_19.md`); rejection paths (existing `test_rejection.py` keep green); CAE allocation; currency rate edge cases                                                                                                                                                                                                                                                |
+| `l10n_ar_pos_afipws_fe`        | 1 file   | extend (TransactionCase; tour only if UI logic appears) | POS order → FE with mocked fiscal backend; error surfacing to POS; `pos.config` fiscal fields validation                                                                                                                                                                                                                                                                                                                                                |
+| `l10n_ar_factura_qr`           | **none** | new suite (TransactionCase)                             | `_parse_arca_qr_url` float normalization (`cuit: 30717930076.0` → int); doc-code → `move_type` mapping (3/8/13 → in_invoice/in_refund); `_prepare_invoice_line_commands` account fallback chain; decoder `new=True` vs `new=False` (empty-field preservation, gotcha #2 of the module AGENTS.md); `ocr.arca.scan` states + manager-only access; synthetic ARCA QR-url fixtures (no real PDFs needed); keep `TESTING_19.md` as the E2E manual complement |
+| `l10n_ar_inflation_adjustment` | **none** | new suite (TransactionCase)                             | wizard run over fixture index (IPC/ICL) periods; adjustment move balancing; **idempotency/second-run**; multi-period + boundary dates; security test on the wizard                                                                                                                                                                                                                                                                                      |
+| `union_affiliation`            | 3 files  | extend                                                  | period boundary edge cases; wizard flows; migration smoke via `make test-install`; controllers → HttpCase (auth)                                                                                                                                                                                                                                                                                                                                        |
+| `union_contribution`           | 2 files  | extend                                                  | contribution computation incl. **rounding**; period aggregation; security matrix extension                                                                                                                                                                                                                                                                                                                                                              |
+| `union_benefit_request`        | 2 files  | extend                                                  | approval state machine; wizard validation errors; HttpCase for controller auth                                                                                                                                                                                                                                                                                                                                                                          |
+| `union_school_position`        | 4 files  | extend                                                  | registration-date rules; affiliate extension (existing) keep green                                                                                                                                                                                                                                                                                                                                                                                      |
+| `payment_sipago`               | 5 files  | extend + harden                                         | provider config constraints; transaction state machine (pending/done/cancelled/refund); **webhook controller HttpCase with mocked outbound** — csrf strategy, token compare (`consteq`), no sudo-on-request-params; `test_sipago_integration.py` must prove it never hits the network (patch at transport level)                                                                                                                                        |
+| `delivery_correo_argentino`    | 1 file   | **done — 26 tests** (§8.11)                             | mocked `_session.request` for MiCorreo/PaqAr (token, rate, labels, tracking, agencies), parcel/timezone/error cases, and security (field `groups` + log redaction). Still open: `es_AR.po`                                                                                                                                                                                                                                                              |
 
 Rule: every CRITICAL/HIGH finding fixed in Phase 1/2 gets a test in the same
 PR/commit that proves the fix (fail-before/pass-after).
@@ -376,81 +376,81 @@ review closes with a `Guidelines read:` list (odoo-review §Report).
 
 ### 8.1 l10n_ar_fiscal_ws — Batch A
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.2 l10n_ar_fiscal_ws_fe — Batch A
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.3 l10n_ar_pos_afipws_fe — Batch A
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.4 l10n_ar_factura_qr — Batch B
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.5 l10n_ar_inflation_adjustment — Batch B
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.6 payment_sipago — Batch C
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.7 union_affiliation — Batch D
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.8 union_contribution — Batch D
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.9 union_benefit_request — Batch D
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
 ### 8.10 union_school_position — Batch D
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| — | | | | | | |
+| ID  | Sev | file:line | Finding | Fix | Section/judgement | Status |
+| --- | --- | --------- | ------- | --- | ----------------- | ------ |
+| —   |     |           |         |     |                   |        |
 
 _Guidelines read:_
 
@@ -458,24 +458,24 @@ _Guidelines read:_
 
 Reviewed commit: `odoo-argentina-envios` @ `d3cb11a` (branch `19.0`).
 
-| ID | Sev | file:line | Finding | Fix | Section/judgement | Status |
-|----|-----|-----------|---------|-----|-------------------|--------|
-| SEC-01 | HIGH | `models/delivery_carrier.py:41-49` | Secret fields (`correo_argentino_micorreo_password`, `correo_argentino_paqar_apikey`) are plain `fields.Char` with no `groups`. `delivery.carrier` is `read`-granted to `sales_team.group_sale_salesman` and `base.group_partner_manager` (core ACL) -> any salesperson reads the API secrets via `read`/`search_read`/export. `password="True"` only masks the widget. | Add `groups=` (e.g. `base.group_system` or a carrier-manager group) to the secret fields; keep the UI mask. | odoo-security: Field-level access; odoo-guidelines `fields.md` | fixed |
-| SEC-02 | MEDIUM | `models/correo_argentino_request.py:159-166` + `models/correo_argentino_micorreo.py:69-83` | Debug logging persists the request `data` to `ir.logging` (sudo, own cursor) via `_log_exchange`; `get_customer_id` sends the plaintext MiCorreo password in `data` -> secret/PII leak into logs (response bodies too). | Redact secret keys before logging, or skip `data` for credential calls. | odoo-security (tokens/secrets) + merits | fixed |
-| SEC-03 | INFO | (no `security/`) | No ACL file needed: every model is inherited (`delivery.carrier`, `stock.picking`) with existing ACLs. The scanner warning is a false positive (its `access_checker` errored on the missing `security/`). | none | odoo-guidelines `security.md` | n/a |
-| VIEW-01 | MEDIUM | `views/delivery_carrier_views.xml:8,90,96,102,108` | Fragile view inheritance: `//notebook/page[1]` (position) and `contains(@invisible, 'not debug_logging')` / `@icon` anchors on core attribute contents. Break silently on core reorder or wording change. | Anchor the page on `page[@name='pricing']`; for the duplicated `toggle_*` buttons anchor on a stable attribute and drop the `contains(@invisible, ...)` matches. | odoo-guidelines `xml.md`: Anchor view inheritance on names, never on position | fixed |
-| MER-01 | MEDIUM | `models/correo_argentino_paqar.py:229` | `saleDate` = `fields.Datetime.now()` (UTC, naive) formatted with a literal `-03:00` offset -> timestamp is 3 h ahead of real Argentina time. | Format the company/carrier timezone with its real offset, or send UTC with `Z`. | merits (timezone) | fixed |
-| MER-02 | LOW | `models/correo_argentino_paqar.py:200-202` | `total_grams // n * n != total`: remainder grams dropped when splitting weight across parcels. | Distribute the remainder over the parcels. | merits (rounding) | fixed |
-| MER-03 | LOW | `models/correo_argentino_micorreo.py:41-59,102-112` | `_get_auth_headers` calls `_get_token()` on every request: a `/token` round-trip per call, no caching/refresh. | Cache the token on the adapter/session, refresh on 401. | `performance.md` | fixed |
-| MER-04 | LOW | `models/correo_argentino_paqar.py:122-135` | `for item in response or []`: a single-label dict response iterates keys, then `item.get` raises `AttributeError`. | Normalize `[response] if isinstance(response, dict)`. | merits (robustness) | fixed |
-| MER-05 | LOW | `models/correo_argentino_paqar.py:135` | Unguarded `base64.b64decode(raw)`: malformed label raises `binascii.Error`, not `CorreoArgentinoError`. | Wrap and re-raise as `CorreoArgentinoError`. | merits | fixed |
-| MER-06 | LOW | `models/correo_argentino_request.py:193-202` | `_split_street` reads `street_name`/`street_number` (from `base_address_extended`, not a dependency): dead branch in a default install; full street sent as `streetName`. | Depend on `base_address_extended` or parse the street; keep the ROADMAP note. | `manifest.md` + merits | fixed |
-| MER-07 | LOW | `models/correo_argentino_request.py:39` + adapters | `tracking_url` unset in both adapters -> `correo_argentino_get_tracking_link` always returns `False`; core `carrier_tracking_url` stays empty. | **Deferred:** needs a confirmed public tracking URL (none in either manual); fabricating one would mislead. Implement once confirmed. | merits | deferred |
-| MER-08 | LOW | `models/delivery_carrier.py:320-328` | `_correo_argentino_get_close_locations` returns the raw agency payload (code TODO): not normalized to the website pickup-point structure, so the selector receives unexpected data. | Normalize the payload to the pickup-location shape. | merits | fixed |
-| TST-01 | MEDIUM | `tests/test_delivery_correo_argentino.py` | No HTTP-layer tests (ROADMAP admits). Covers only factory/capabilities/fallback/wiring. | Mock `_session.request`: token, rate parse, payload builders, error mapping, labels, tracking, cancel, plus an assertion for SEC-01. | odoo-guidelines `tests.md`; plan §5.2 | fixed |
-| MAN-01 | LOW | `__manifest__.py:9` | Author "Fundacion Mueve, Odoo Community Association (OCA)" while the module lives in a non-OCA repo. | Drop "OCA" or place the module under OCA governance. | `manifest.md` | fixed |
-| QUAL-01 | LOW | `models/delivery_carrier.py:103,113` | Mirror fields reuse the core labels ("Environment" / "Debug logging"), so Odoo logs "Two fields ... have the same label" on install. | Renamed to "API environment" / "API debug logging". | merits (install warning) | fixed |
-| QUAL-02 | LOW | `data/delivery_correo_argentino_data.xml:3` | `oca-checks-odoo-module` flags `xml-deprecated-data-node`: `<odoo><data noupdate="1">`. | Moved `noupdate="1"` onto `<odoo>` and dropped `<data>`. | oca-checks-odoo-module; odoo-guidelines `xml.md` | fixed |
+| ID      | Sev    | file:line                                                                                  | Finding                                                                                                                                                                                                                                                                                                                                                                 | Fix                                                                                                                                                              | Section/judgement                                                             | Status   |
+| ------- | ------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------- |
+| SEC-01  | HIGH   | `models/delivery_carrier.py:41-49`                                                         | Secret fields (`correo_argentino_micorreo_password`, `correo_argentino_paqar_apikey`) are plain `fields.Char` with no `groups`. `delivery.carrier` is `read`-granted to `sales_team.group_sale_salesman` and `base.group_partner_manager` (core ACL) -> any salesperson reads the API secrets via `read`/`search_read`/export. `password="True"` only masks the widget. | Add `groups=` (e.g. `base.group_system` or a carrier-manager group) to the secret fields; keep the UI mask.                                                      | odoo-security: Field-level access; odoo-guidelines `fields.md`                | fixed    |
+| SEC-02  | MEDIUM | `models/correo_argentino_request.py:159-166` + `models/correo_argentino_micorreo.py:69-83` | Debug logging persists the request `data` to `ir.logging` (sudo, own cursor) via `_log_exchange`; `get_customer_id` sends the plaintext MiCorreo password in `data` -> secret/PII leak into logs (response bodies too).                                                                                                                                                 | Redact secret keys before logging, or skip `data` for credential calls.                                                                                          | odoo-security (tokens/secrets) + merits                                       | fixed    |
+| SEC-03  | INFO   | (no `security/`)                                                                           | No ACL file needed: every model is inherited (`delivery.carrier`, `stock.picking`) with existing ACLs. The scanner warning is a false positive (its `access_checker` errored on the missing `security/`).                                                                                                                                                               | none                                                                                                                                                             | odoo-guidelines `security.md`                                                 | n/a      |
+| VIEW-01 | MEDIUM | `views/delivery_carrier_views.xml:8,90,96,102,108`                                         | Fragile view inheritance: `//notebook/page[1]` (position) and `contains(@invisible, 'not debug_logging')` / `@icon` anchors on core attribute contents. Break silently on core reorder or wording change.                                                                                                                                                               | Anchor the page on `page[@name='pricing']`; for the duplicated `toggle_*` buttons anchor on a stable attribute and drop the `contains(@invisible, ...)` matches. | odoo-guidelines `xml.md`: Anchor view inheritance on names, never on position | fixed    |
+| MER-01  | MEDIUM | `models/correo_argentino_paqar.py:229`                                                     | `saleDate` = `fields.Datetime.now()` (UTC, naive) formatted with a literal `-03:00` offset -> timestamp is 3 h ahead of real Argentina time.                                                                                                                                                                                                                            | Format the company/carrier timezone with its real offset, or send UTC with `Z`.                                                                                  | merits (timezone)                                                             | fixed    |
+| MER-02  | LOW    | `models/correo_argentino_paqar.py:200-202`                                                 | `total_grams // n * n != total`: remainder grams dropped when splitting weight across parcels.                                                                                                                                                                                                                                                                          | Distribute the remainder over the parcels.                                                                                                                       | merits (rounding)                                                             | fixed    |
+| MER-03  | LOW    | `models/correo_argentino_micorreo.py:41-59,102-112`                                        | `_get_auth_headers` calls `_get_token()` on every request: a `/token` round-trip per call, no caching/refresh.                                                                                                                                                                                                                                                          | Cache the token on the adapter/session, refresh on 401.                                                                                                          | `performance.md`                                                              | fixed    |
+| MER-04  | LOW    | `models/correo_argentino_paqar.py:122-135`                                                 | `for item in response or []`: a single-label dict response iterates keys, then `item.get` raises `AttributeError`.                                                                                                                                                                                                                                                      | Normalize `[response] if isinstance(response, dict)`.                                                                                                            | merits (robustness)                                                           | fixed    |
+| MER-05  | LOW    | `models/correo_argentino_paqar.py:135`                                                     | Unguarded `base64.b64decode(raw)`: malformed label raises `binascii.Error`, not `CorreoArgentinoError`.                                                                                                                                                                                                                                                                 | Wrap and re-raise as `CorreoArgentinoError`.                                                                                                                     | merits                                                                        | fixed    |
+| MER-06  | LOW    | `models/correo_argentino_request.py:193-202`                                               | `_split_street` reads `street_name`/`street_number` (from `base_address_extended`, not a dependency): dead branch in a default install; full street sent as `streetName`.                                                                                                                                                                                               | Depend on `base_address_extended` or parse the street; keep the ROADMAP note.                                                                                    | `manifest.md` + merits                                                        | fixed    |
+| MER-07  | LOW    | `models/correo_argentino_request.py:39` + adapters                                         | `tracking_url` unset in both adapters -> `correo_argentino_get_tracking_link` always returns `False`; core `carrier_tracking_url` stays empty.                                                                                                                                                                                                                          | **Deferred:** needs a confirmed public tracking URL (none in either manual); fabricating one would mislead. Implement once confirmed.                            | merits                                                                        | deferred |
+| MER-08  | LOW    | `models/delivery_carrier.py:320-328`                                                       | `_correo_argentino_get_close_locations` returns the raw agency payload (code TODO): not normalized to the website pickup-point structure, so the selector receives unexpected data.                                                                                                                                                                                     | Normalize the payload to the pickup-location shape.                                                                                                              | merits                                                                        | fixed    |
+| TST-01  | MEDIUM | `tests/test_delivery_correo_argentino.py`                                                  | No HTTP-layer tests (ROADMAP admits). Covers only factory/capabilities/fallback/wiring.                                                                                                                                                                                                                                                                                 | Mock `_session.request`: token, rate parse, payload builders, error mapping, labels, tracking, cancel, plus an assertion for SEC-01.                             | odoo-guidelines `tests.md`; plan §5.2                                         | fixed    |
+| MAN-01  | LOW    | `__manifest__.py:9`                                                                        | Author "Fundacion Mueve, Odoo Community Association (OCA)" while the module lives in a non-OCA repo.                                                                                                                                                                                                                                                                    | Drop "OCA" or place the module under OCA governance.                                                                                                             | `manifest.md`                                                                 | fixed    |
+| QUAL-01 | LOW    | `models/delivery_carrier.py:103,113`                                                       | Mirror fields reuse the core labels ("Environment" / "Debug logging"), so Odoo logs "Two fields ... have the same label" on install.                                                                                                                                                                                                                                    | Renamed to "API environment" / "API debug logging".                                                                                                              | merits (install warning)                                                      | fixed    |
+| QUAL-02 | LOW    | `data/delivery_correo_argentino_data.xml:3`                                                | `oca-checks-odoo-module` flags `xml-deprecated-data-node`: `<odoo><data noupdate="1">`.                                                                                                                                                                                                                                                                                 | Moved `noupdate="1"` onto `<odoo>` and dropped `<data>`.                                                                                                         | oca-checks-odoo-module; odoo-guidelines `xml.md`                              | fixed    |
 
 **Fixes applied and verified (22:26, DB `test_correo`):**
 
@@ -530,6 +530,6 @@ the official `~/.agents/skills/odoo-security/SKILL.md` full sweep table.
 
 ---
 
-*Inventory and repo config data in §1/§3 verified against the working tree on
+_Inventory and repo config data in §1/§3 verified against the working tree on
 2026-09-23 (`19.0-dev`). Re-verify counts before reporting if submodules have
-moved.*
+moved._
