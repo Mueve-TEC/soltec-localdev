@@ -189,7 +189,21 @@ db_create_from_template() {
   local template=$2
   local dbq=${db//\"/\"\"}
   local templateq=${template//\"/\"\"}
-  db_psql postgres "CREATE DATABASE \"$dbq\" WITH TEMPLATE \"$templateq\" OWNER \"odoo\"" >/dev/null
+
+  # CREATE DATABASE ... TEMPLATE is the fast path, but Postgres refuses to
+  # clone a database that has open connections, and the running Odoo connects
+  # to every database it discovers, the golden one included. So whenever the
+  # main stack is up this fails: fall back to a dump/restore pipeline, which
+  # tolerates connections and is what golden-refresh itself uses.
+  if db_psql postgres "CREATE DATABASE \"$dbq\" WITH TEMPLATE \"$templateq\" OWNER \"odoo\"" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  warn "could not clone '$template' with TEMPLATE (open connections); cloning with pg_dump/pg_restore"
+  db_drop "$db"
+  main_compose exec -T db createdb -U odoo -O odoo "$dbq"
+  main_compose exec -T db pg_dump -U odoo --no-owner --no-privileges "$template" |
+    main_compose exec -T db psql -U odoo -d "$dbq" -q -v ON_ERROR_STOP=1 >/dev/null
 }
 
 db_drop() {
@@ -197,9 +211,34 @@ db_drop() {
   main_compose exec -T db dropdb -U odoo --if-exists --force "$db"
 }
 
+# Databases available in the shared Postgres, comma separated. Used to make
+# error messages actionable instead of suggesting a database that may not
+# exist.
+list_databases() {
+  main_compose exec -T db psql -U odoo -d postgres -tAc \
+    "SELECT datname FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres' ORDER BY datname" |
+    paste -sd, -
+}
+
 require_golden() {
-  db_exists "$GOLDEN_DB" ||
-    die "golden database '$GOLDEN_DB' does not exist (run: make golden-refresh SRC_DB=admin)"
+  if db_exists "$GOLDEN_DB"; then
+    return 0
+  fi
+  die "golden database '$GOLDEN_DB' does not exist.
+Create it with: make golden-refresh SRC_DB=<database>
+Available databases: $(list_databases)"
+}
+
+# Fail with an actionable message when the ticket web container is not
+# running; `docker compose exec` would otherwise fail with a raw engine error.
+require_web() {
+  local state
+  state=$(docker ps \
+    --filter "label=com.docker.compose.project=$TICKET_PROJECT" \
+    --filter "label=com.docker.compose.service=web" \
+    --format '{{.State}}' | head -n1)
+  [[ "$state" == "running" ]] ||
+    die "ticket web is not running (start it with: make ticket-up SLUG=$TICKET_SLUG)"
 }
 
 require_image() {

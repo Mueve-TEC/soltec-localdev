@@ -466,10 +466,13 @@ How it works / rules:
    initialises the submodules and creates a branch `19.0-<slug>` in **each**
    submodule at `origin/19.0` (falling back to the recorded revision offline).
    It commits the resulting gitlink bump on the ticket branch.
-2. The ticket DB is cloned with `CREATE DATABASE t_<slug> TEMPLATE
-ticket_template`; the golden DB must stay unused (Postgres refuses to clone a
-   DB with connections). The filestore is copied from `ticket_template` into the
-   ticket's own volume.
+2. The ticket DB is cloned from `ticket_template` with `CREATE DATABASE
+t_<slug> TEMPLATE ticket_template` when the golden DB has no open
+   connections, and with a `pg_dump`/`pg_restore` pipeline otherwise. Postgres
+   refuses to clone a DB that is in use, and the running Odoo keeps a
+   connection to every database it discovers, so the fallback is the usual
+   path while the main stack is up. The filestore is copied from
+   `ticket_template` into the ticket's own volume.
 3. The ticket `web` joins the main stack's external network, so `HOST=db`
    resolves; it does **not** start its own Postgres. The main `db` service must
    be up — `make ticket-up`/`ticket-new` start it if needed.

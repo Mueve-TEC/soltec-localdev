@@ -24,7 +24,9 @@
 #   BASE_REF       (default: HEAD of the main checkout)  — used by `new`
 #   SRC_DB         (default: admin)                      — used by `golden-refresh`
 
-set -euo pipefail
+# -E makes the ERR trap reach into the functions cmd_new uses, so a failure in
+# the middle of `new` still prints the partial-ticket cleanup hint.
+set -Eeuo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=scripts/ticket-lib.sh
@@ -103,9 +105,10 @@ cmd_new() {
 
   [[ -f "$MAIN_ROOT/docker-compose.yml" ]] ||
     die "main checkout not found at $MAIN_ROOT"
-  [[ -e "$dir" ]] && die "ticket directory already exists: $dir"
+  [[ -e "$dir" ]] &&
+    die "ticket directory already exists: $dir (remove the leftovers with: make ticket-done SLUG=$slug FORCE=1)"
   git -C "$MAIN_ROOT" show-ref --verify --quiet "refs/heads/$branch" &&
-    die "branch '$branch' already exists in $MAIN_ROOT"
+    die "branch '$branch' already exists in $MAIN_ROOT (delete it with: git -C $MAIN_ROOT branch -D $branch)"
 
   require_image "$DEFAULT_IMAGE_TAG"
   ensure_db_up
@@ -172,6 +175,9 @@ cmd_up() {
   load_ticket "${1:-}"
   ensure_db_up
   ticket_compose up -d web
+  # make the printed URL usable: the container starts before Odoo has loaded
+  # its registry, so a plain up returns while the port still resets.
+  wait_http "$WEB_PORT"
   printf 'Ticket %s: http://localhost:%s\n' "$TICKET_SLUG" "$WEB_PORT"
 }
 
@@ -188,6 +194,7 @@ cmd_logs() {
 
 cmd_shell() {
   load_ticket "${1:-}"
+  require_web
   ticket_compose exec web bash
 }
 
@@ -200,6 +207,7 @@ cmd_dbshell() {
 cmd_upgrade() {
   load_ticket "${1:-}"
   [[ -n "${MODULE:-}" ]] || die "MODULE=<module> is required"
+  require_web
   ticket_compose exec -T web \
     odoo --addons-path="$ADDONS_PATH" \
     --db_host=db --db_user=odoo --db_password=odoo \
@@ -209,6 +217,7 @@ cmd_upgrade() {
 cmd_test() {
   load_ticket "${1:-}"
   [[ -n "${MODULE:-}" ]] || die "MODULE=<module> is required"
+  require_web
 
   local args=(
     exec -T web odoo
@@ -311,11 +320,11 @@ cmd_done() {
 
   info "removing worktree $dir"
   if [[ -e "$dir" ]]; then
-    if [[ "${FORCE:-0}" == "1" ]]; then
-      git -C "$MAIN_ROOT" worktree remove --force "$dir"
-    else
-      git -C "$MAIN_ROOT" worktree remove "$dir"
-    fi
+    # git refuses to remove a worktree that contains submodules, so --force is
+    # always required here. Uncommitted or unpushed work was already rejected
+    # above by collect_problems unless FORCE=1, and the worktree only holds
+    # generated files (.ticket/, .env, custom-addons/) beyond that.
+    git -C "$MAIN_ROOT" worktree remove --force "$dir"
   fi
   git -C "$MAIN_ROOT" worktree prune
 
@@ -324,6 +333,10 @@ cmd_done() {
   else
     printf 'Branch %s kept (not merged into HEAD, or already gone).\n' "$TICKET_BRANCH"
   fi
+
+  # Nothing else to clean: git removes .git/worktrees/<slug>/ together with its
+  # modules/ subtree, so the per-submodule branches created by init_submodules
+  # disappear together with the worktree.
 
   printf 'Ticket %s removed.\n' "$TICKET_SLUG"
 }
@@ -365,7 +378,9 @@ cmd_golden_refresh() {
 
   [[ "$src" != "$GOLDEN_DB" ]] || die "SRC_DB cannot be the golden DB itself"
   ensure_db_up
-  db_exists "$src" || die "source database '$src' does not exist"
+  db_exists "$src" ||
+    die "source database '$src' does not exist.
+Available databases: $(list_databases)"
 
   tmp=$(mktemp)
   trap 'rm -f "${tmp:-}"' EXIT
