@@ -2,4 +2,4 @@
 # FROM odoo:19.0
 
 # Usar la imagen del programa SOL3
-FROM muevetec/soltec-odoo:19.0.6-dev
+FROM muevetec/soltec-odoo:19.0.9-dev
