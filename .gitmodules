@@ -1,0 +1,4 @@
+[submodule "submodules/odoo-argentina-invoice-ocr"]
+	path = submodules/odoo-argentina-invoice-ocr
+	url = git@github.com:Mueve-TEC/odoo-argentina-invoice-ocr.git
+	branch = 19.0-dev
