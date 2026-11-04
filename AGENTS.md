@@ -348,7 +348,8 @@ make secret-scan SECRET_SCAN_PATHS=". ../invoice-item-extractor ../facturas-back
 The gitleaks config excludes generated directories (`custom-addons/`,
 `.git/`, `node_modules/`, caches, ticket state). Findings are redacted and the
 target exits non-zero; scan every project repository and dataset before the
-pilot (PLAN.md Etapa 0).
+pilot (PLAN.md Etapa 0). Record each run under `docs/security/` with redacted
+findings.
 
 ## Documentation
 
