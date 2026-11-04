@@ -38,7 +38,7 @@ DOCKER_COMPOSE ?= docker compose
 # ---------------------------------------------------------------------------
 # Ciclo de vida del entorno
 # ---------------------------------------------------------------------------
-.PHONY: build up down down-clean logs ps shell restart
+.PHONY: build up down down-clean logs ps shell restart secret-scan
 build:          ## Build de la imagen Odoo (usar tras cambiar el Dockerfile)
 	$(DOCKER_COMPOSE) build --no-cache
 
@@ -176,6 +176,14 @@ ticket-done:    ## Eliminar ticket (worktree + DB + volúmenes); KEEP=1 / FORCE=
 
 golden-refresh: ## Recrear la DB golden desde SRC_DB (default: admin)
 	@SRC_DB='$(SRC_DB)' bash scripts/ticket.sh golden-refresh
+
+# ---------------------------------------------------------------------------
+# Seguridad
+# ---------------------------------------------------------------------------
+SECRET_SCAN_PATHS ?= .
+
+secret-scan:    ## Buscar secretos con gitleaks/trufflehog (paths: SECRET_SCAN_PATHS)
+	bash scripts/secret-scan.sh $(SECRET_SCAN_PATHS)
 
 # ---------------------------------------------------------------------------
 # Help

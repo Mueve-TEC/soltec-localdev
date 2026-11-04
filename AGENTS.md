@@ -335,6 +335,21 @@ make format    # autofix (ruff + prettier), won't fail
   `cd submodules/odoo-argentina && pre-commit run --all-files`).
 - **No type checker** is configured (`mypy`/`pyright` absent).
 
+## Secret scanning
+
+`make secret-scan` runs gitleaks (or trufflehog, or the gitleaks Docker image
+as fallback) over the configured paths:
+
+```bash
+make secret-scan                                    # current checkout
+make secret-scan SECRET_SCAN_PATHS=". ../invoice-item-extractor ../facturas-backend-UNC-PSI"
+```
+
+The gitleaks config excludes generated directories (`custom-addons/`,
+`.git/`, `node_modules/`, caches, ticket state). Findings are redacted and the
+target exits non-zero; scan every project repository and dataset before the
+pilot (PLAN.md Etapa 0).
+
 ## Documentation
 
 - **`README.md`** (root, Spanish) — user-facing setup guide.
