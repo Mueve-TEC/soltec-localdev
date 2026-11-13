@@ -20,6 +20,9 @@ TEST_TAGS ?=
 HTTP_PORT ?= 8099
 SLUG ?=
 SRC_DB ?= admin
+RESTORE_DB ?= $(DB)_restore_check
+PILOT_SECRET_SCAN ?= 0
+PILOT_SCAN_PATHS ?= . ../invoice-item-extractor ../facturas-backend-UNC-PSI ../ocr-scripts
 ODOO_RUN   = $(DOCKER_COMPOSE) exec web
 ODOO_RUN_RM = $(DOCKER_COMPOSE) run --rm web
 
@@ -84,22 +87,30 @@ upgrade:        ## Actualizar MODULE en DB (docker compose exec web odoo -u)
 test:           ## Correr tests de MODULE (upgrade + --test-enable, output filtrado)
 	@bash scripts/test-runner.sh $(ODOO_RUN) $(ODOO_CMD) -d $(DB) -u $(MODULE) \
 		--test-enable $(if $(TEST_TAGS),--test-tags='$(TEST_TAGS)') \
-		--stop-after-init --log-level=info
+		--workers=0 --stop-after-init --log-level=info
 
 test-install:   ## Correr tests de MODULE vía -i (instalación fresca, output filtrado)
 	@bash scripts/test-runner.sh $(ODOO_RUN) $(ODOO_CMD) -d $(DB) -i $(MODULE) \
 		--test-enable $(if $(TEST_TAGS),--test-tags='$(TEST_TAGS)') \
-		--stop-after-init --log-level=info
+		--workers=0 --stop-after-init --log-level=info
 
 test-raw:       ## Correr tests de MODULE SIN filtrar (output completo de Odoo)
 	$(ODOO_RUN) $(ODOO_CMD) -d $(DB) -u $(MODULE) --test-enable \
 		$(if $(TEST_TAGS),--test-tags='$(TEST_TAGS)') \
-		--stop-after-init --log-level=info
+		--workers=0 --stop-after-init --log-level=info
 
 test-install-raw: ## Correr tests de MODULE vía -i SIN filtrar
 	$(ODOO_RUN) $(ODOO_CMD) -d $(DB) -i $(MODULE) --test-enable \
 		$(if $(TEST_TAGS),--test-tags='$(TEST_TAGS)') \
-		--stop-after-init --log-level=info
+		--workers=0 --stop-after-init --log-level=info
+
+# ---------------------------------------------------------------------------
+# Pilot readiness (Etapa 4)
+# ---------------------------------------------------------------------------
+.PHONY: pilot-check
+pilot-check:    ## Verificar readiness del piloto (DB, reglas, adjuntos, restore, secretos)
+	DB='$(DB)' RESTORE_DB='$(RESTORE_DB)' SECRET_SCAN='$(PILOT_SECRET_SCAN)' \
+		SECRET_SCAN_PATHS='$(PILOT_SCAN_PATHS)' bash scripts/pilot-check.sh
 
 # ---------------------------------------------------------------------------
 # Base de datos / shell
