@@ -32,8 +32,8 @@ to develop and test the SolTec / SOL3 Argentine localization modules
 What it is / is not:
 
 - It does **not** contain the Odoo server source — it rides on the SOL3 base
-  image `muevetec/soltec-odoo:19.0.6-dev` (`FROM` in `Dockerfile`; Odoo Server
-  19.0-20260817).
+  image `muevetec/soltec-odoo:19.0.10-dev` (`FROM` in `Dockerfile`; Odoo Server
+  19.0-20260908).
 - The base image **bakes in ~123 modules** at `/mnt/extra-addons` (the
   read-only production baseline). The editable layer is **`custom-addons/`**
   (host `./custom-addons`, bind-mounted at `/mnt/custom-addons`), which is
@@ -60,7 +60,7 @@ Branch model & source of truth:
   gitlink pointer to record which revision is in use.
 - **`19.0` is the generic base branch** — a reusable local-development
   environment template with no project-specific modules.
-- **Project/development branches** (e.g. `19.0-<project>`) are *utility*
+- **Project/development branches** (e.g. `19.0-<project>`) are _utility_
   branches used to track a development effort until it is finished. They are
   not necessarily merged back into the base, and they are **not** the source of
   truth for module code. When the effort ends, the persistent result already
@@ -74,16 +74,16 @@ tool, and they are additive (load more than one if a task crosses domains).
 
 ### Which skill to load when
 
-| If the task is…                                              | Load                   |
-| ------------------------------------------------------------ | ---------------------- |
-| Write / review Python models, XML views, wizards, manifests  | `odoo-development`     |
-| Migrate module code between Odoo versions (16/17/18 → 19)    | `odoo-upgrade`         |
-| Write or run `tests/` (TransactionCase, HttpCase, tours)     | `odoo-automated-tests` |
-| Review a module, a Python file, or an XML view               | `odoo-code-review`     |
-| Audit access rules, sudo, SQL injection, controllers         | `odoo-security`        |
-| OCA conventions, scaffold a new OCA-style module             | `odoo-oca-developer`   |
-| Generate test skeletons, mock data, coverage analysis        | `odoo-test`            |
-| Discover / install an agent skill you don't have             | `find-skills`          |
+| If the task is…                                             | Load                   |
+| ----------------------------------------------------------- | ---------------------- |
+| Write / review Python models, XML views, wizards, manifests | `odoo-development`     |
+| Migrate module code between Odoo versions (16/17/18 → 19)   | `odoo-upgrade`         |
+| Write or run `tests/` (TransactionCase, HttpCase, tours)    | `odoo-automated-tests` |
+| Review a module, a Python file, or an XML view              | `odoo-code-review`     |
+| Audit access rules, sudo, SQL injection, controllers        | `odoo-security`        |
+| OCA conventions, scaffold a new OCA-style module            | `odoo-oca-developer`   |
+| Generate test skeletons, mock data, coverage analysis       | `odoo-test`            |
+| Discover / install an agent skill you don't have            | `find-skills`          |
 
 Other skills available in the environment (general purpose): `customize-opencode`
 (editing opencode's own config), `caveman` (compressed output), `grill-me` /
@@ -99,7 +99,7 @@ if task involves <one of the rows above>:
 
 ```
 soltec-localdev-odoo19/
-├── Dockerfile              # FROM muevetec/soltec-odoo:19.0.6-dev (SOL3, Odoo 19)
+├── Dockerfile              # FROM muevetec/soltec-odoo:19.0.10-dev (SOL3, Odoo 19)
 ├── docker-compose.yml      # web (Odoo) + db (postgres:14) + pgadmin
 ├── Makefile                # wrappers: build/up/down/install/upgrade/test/lint…
 ├── scripts/test-runner.sh  # filters Odoo --test-enable output (PASS/FAIL/ERROR)
@@ -157,16 +157,16 @@ Order matters — **the first path containing a module name wins**:
 Everything runs through Docker Compose. The `Makefile` wraps the common flows;
 raw `docker compose` equivalents are shown alongside.
 
-| Action                                          | Make target       | Raw command                           |
-| ----------------------------------------------- | ----------------- | ------------------------------------- |
-| Build the Odoo image (after Dockerfile change)  | `make build`      | `docker compose build --no-cache`     |
-| Start all services (detached)                   | `make up`         | `docker compose up -d`                |
-| Stop services (keeps volumes)                   | `make down`       | `docker compose down`                 |
-| Stop + delete volumes (wipe DB/files)           | `make down-clean` | `docker compose down -v`              |
-| View Odoo logs (follow)                         | `make logs`       | `docker compose logs -f web`          |
-| Service status                                  | `make ps`         | `docker compose ps`                   |
-| Bash inside the Odoo container                  | `make shell`      | `docker compose exec web bash`        |
-| Restart the web service                         | `make restart`    | `docker compose restart web`          |
+| Action                                         | Make target       | Raw command                       |
+| ---------------------------------------------- | ----------------- | --------------------------------- |
+| Build the Odoo image (after Dockerfile change) | `make build`      | `docker compose build --no-cache` |
+| Start all services (detached)                  | `make up`         | `docker compose up -d`            |
+| Stop services (keeps volumes)                  | `make down`       | `docker compose down`             |
+| Stop + delete volumes (wipe DB/files)          | `make down-clean` | `docker compose down -v`          |
+| View Odoo logs (follow)                        | `make logs`       | `docker compose logs -f web`      |
+| Service status                                 | `make ps`         | `docker compose ps`               |
+| Bash inside the Odoo container                 | `make shell`      | `docker compose exec web bash`    |
+| Restart the web service                        | `make restart`    | `docker compose restart web`      |
 
 `make help` lists all targets. Overridable variables: `DB` (default `odoo`),
 `MODULE` (default `base`), `TEST_TAGS`.
@@ -193,6 +193,50 @@ Notes:
   pass `--db_host=db --db_user=odoo --db_password=odoo` on CLI runs.
 - If the container is not running, use `docker compose run --rm web` instead of
   `docker compose exec web`.
+
+### Demo database (`demo_ar`)
+
+The local demo database is `demo_ar` (created 2026-11-13; the old `ai_eval` DB
+was backed up outside the repository and removed). It uses Argentina as
+country, ARS as currency and `es_AR` as the active language.
+
+- Organizations/companies: **Estudio Contable Norte** (`Demo Norte SA`,
+  `Demo Servicios SRL`) and **Estudio Contable Sur** (`Demo Sur SA`). All use
+  the `ar_ri` chart and ARCA responsibility RI.
+- Demo users and scope:
+
+| User               | Organization | Companies                         | Role                       |
+| ------------------ | ------------ | --------------------------------- | -------------------------- |
+| `admin`            | both         | all three                         | System administrator       |
+| `platform_manager` | both         | all three                         | Platform Manager           |
+| `org_admin_a`      | Norte        | Demo Norte SA, Demo Servicios SRL | Organization Administrator |
+| `accountant_a1`    | Norte        | Demo Norte SA                     | Accountant Validator       |
+| `accountant_a2`    | Norte        | Demo Servicios SRL                | Accountant Validator       |
+| `reviewer_a1`      | Norte        | Demo Norte SA, Demo Servicios SRL | Reviewer                   |
+| `reviewer_a2`      | Norte        | Demo Norte SA, Demo Servicios SRL | Reviewer                   |
+| `researcher_a`     | Norte        | Demo Norte SA, Demo Servicios SRL | Researcher                 |
+| `org_admin_b`      | Sur          | Demo Sur SA                       | Organization Administrator |
+| `accountant_b1`    | Sur          | Demo Sur SA                       | Accountant Validator       |
+| `reviewer_b1`      | Sur          | Demo Sur SA                       | Reviewer                   |
+| `researcher_b`     | Sur          | Demo Sur SA                       | Researcher                 |
+
+The `*_a*` users belong to Estudio Contable Norte; `accountant_a2` works with
+`Demo Servicios SRL` (the second Norte company). The `*_b*` users belong to
+Estudio Contable Sur. `platform_manager` and `admin` can access both
+organizations.
+
+Demo data: 7 company-scoped suppliers (RI/Monotributo/Exento), AR products
+with IVA 21%, 3 batches with 5 sample documents (standard, Factura A,
+multi-page, credit note and an image), one “Sin lote” document, and one credit
+note waiting for a reviewer. Login passwords are local demo credentials and
+are intentionally not recorded here; reset them locally if needed.
+
+Use `DB=demo_ar` on every CLI target, e.g.:
+
+```bash
+make test DB=demo_ar MODULE=account_invoice_ai_evaluation
+make pilot-check DB=demo_ar
+```
 
 ## Editing modules (the daily workflow)
 
@@ -308,7 +352,7 @@ make odoo-shell DB=<db>  # Python prompt with env/registry inside the container
     -d <db> -u <module> --i18n-overwrite --stop-after-init --http-port 8099
   ```
 - **Empty `msgstr` terms are skipped entirely** by the importer: they neither
-  overwrite nor *remove* an existing (bad) translation. If a DB already has a
+  overwrite nor _remove_ an existing (bad) translation. If a DB already has a
   bogus value for a term you blanked out, delete the language key from the JSONB
   directly:
   ```sql
@@ -355,6 +399,9 @@ findings.
 
 - **`README.md`** (root, Spanish) — user-facing setup guide.
 - **`AGENTS.md`** — this file (opencode project context, auto-loaded).
+- **`docs/pilot/qa-checklist.md`** — Etapa 4 pilot QA: security gates, smoke
+  and multi-org checks, backup/restore drill, sign-off.
+- **`docs/security/`** — dated secret-scan records (redacted).
 - `.qodo/` — empty Qodo scaffold (safe to delete).
 
 ## Parallel ticket worktrees (multiple opencode sessions)
@@ -364,13 +411,13 @@ port, database and filestore, while sharing the main checkout's **Postgres
 server**, Docker network and image. This lets several opencode sessions (one
 terminal each) work without touching each other's tree, DB or port.
 
-| Resource | Ownership |
-| -------- | --------- |
-| Git worktree / branches | per ticket: `<main>/../soltec-tickets/<slug>` |
-| Odoo `web` container | per ticket (`docker compose -p tkt-<slug>`) |
-| Database `t_<slug>` | per ticket, hosted in the **main stack's** Postgres |
-| Filestore volume | per ticket, seeded from the golden DB's filestore |
-| Postgres, image, network | shared, owned by the main checkout |
+| Resource                 | Ownership                                           |
+| ------------------------ | --------------------------------------------------- |
+| Git worktree / branches  | per ticket: `<main>/../soltec-tickets/<slug>`       |
+| Odoo `web` container     | per ticket (`docker compose -p tkt-<slug>`)         |
+| Database `t_<slug>`      | per ticket, hosted in the **main stack's** Postgres |
+| Filestore volume         | per ticket, seeded from the golden DB's filestore   |
+| Postgres, image, network | shared, owned by the main checkout                  |
 
 One-time setup (in the main checkout):
 
@@ -401,10 +448,10 @@ How it works / rules:
    initialises the submodules and creates a branch `19.0-<slug>` in **each**
    submodule at `origin/19.0` (falling back to the recorded revision offline).
    It commits the resulting gitlink bump on the ticket branch.
-2. The ticket DB is cloned with `CREATE DATABASE t_<slug> TEMPLATE
-   ticket_template`; the golden DB must stay unused (Postgres refuses to clone a
-   DB with connections). The filestore is copied from `ticket_template` into the
-   ticket's own volume.
+2. The ticket DB is cloned from `ticket_template` with
+   `CREATE DATABASE t_<slug> TEMPLATE ticket_template`; the golden DB must stay
+   unused (Postgres refuses to clone a DB with connections). The filestore is
+   copied from `ticket_template` into the ticket's own volume.
 3. The ticket `web` joins the main stack's external network, so `HOST=db`
    resolves; it does **not** start its own Postgres. The main `db` service must
    be up — `make ticket-up`/`ticket-new` start it if needed.
@@ -450,24 +497,25 @@ How it works / rules:
    collide with the running web container's 8069.
 5. **`Makefile` `ADDONS_PATH` includes `/mnt/extra-addons`** (same as the
    compose command), so image-baked modules are visible to `make
-   install/upgrade/test` too.
+install/upgrade/test` too.
 6. **Translations**: plain `-u` doesn't overwrite; use `--i18n-overwrite`;
    empty `msgstr` terms are skipped (never clean existing DB values).
-7. **Image versions**: `muevetec/soltec-odoo:19.0.6-dev` is Odoo 19 (correct).
-   The older tag `1.0.6-dev` is **Odoo 16** — do not switch the Dockerfile to
+7. **Image versions**: the current base is `muevetec/soltec-odoo:19.0.10-dev`
+   (Odoo Server 19.0-20260908). The older `19.0.6-dev` tag is also Odoo 19;
+   the older `1.0.6-dev` tag is **Odoo 16** — do not switch the Dockerfile to
    it.
 8. **`mock_repo` placeholder**: `submodules/mock_repo/mock_module/` is a
    tracked placeholder (added in `42ded27`) that keeps the addons path valid
    while `submodules/` has no real modules. Keep it until you add your first
    real submodule, then it can be removed.
-10. **Branch model**: `19.0` is the generic base/environment branch. Do project
-    work on a utility branch (`19.0-<project>`) as a temporary tracker — the
-    lasting code lives in the `submodules/` repos, not in the branch. Don't mix
-    module commits between Odoo-version branches. Only commit/push when
-    explicitly asked.
-11. **Odoo-16 quick check**: a fresh image build silently downgrading to
+9. **Branch model**: `19.0` is the generic base/environment branch. Do project
+   work on a utility branch (`19.0-<project>`) as a temporary tracker — the
+   lasting code lives in the `submodules/` repos, not in the branch. Don't mix
+   module commits between Odoo-version branches. Only commit/push when
+   explicitly asked.
+10. **Odoo-16 quick check**: a fresh image build silently downgrading to
     "Odoo version 16.0…" in the logs means the Dockerfile `FROM` was changed to
     a wrong tag — verify after `make build`.
-12. **`arcaws.env.type`** changes apply live (no restart): switching
+11. **`arcaws.env.type`** changes apply live (no restart): switching
     homologation↔production takes effect immediately; an invalid value raises a
     `UserError` (no silent fallback).

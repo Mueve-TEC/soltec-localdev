@@ -2,10 +2,12 @@
 
 # Plataforma de prueba y recolección de datos para automatización de facturas argentinas en Odoo 19 CE
 
-> **Versión 2 (noviembre 2026).** Reescrita como *roadmap de integración*: la
-> mayoría de los componentes ya existen y están avanzados. Este documento
-> mapea los activos actuales, define el trabajo netamente nuevo y ordena las
-> etapas hacia un piloto con equipos contables.
+> **Versión 3 (noviembre 2026).** Roadmap de integración actualizado tras la
+> implementación de la app contable: la evaluación, la carga por lotes, la
+> revisión, la confirmación a factura borrador y la cola de revisores ya están
+> implementadas y probadas. El diseño UX/UI detallado vive en
+> `docs/accountant-app-v1.md`. El próximo hito es el piloto con contadores y el
+> endurecimiento operativo.
 
 ## 1. Objetivo
 
@@ -15,64 +17,108 @@ recopilar un conjunto de datos de evaluación validado por contadores.
 
 La plataforma permitirá:
 
-1. Cargar facturas en PDF, imágenes, fotografías y escaneos.
+1. Cargar facturas en lotes (PDF, imágenes, fotografías y escaneos).
 2. Extraer los metadatos disponibles en el QR de ARCA.
 3. Extraer los ítems de las facturas: capa de texto del PDF cuando exista
-    (estrategia primaria) y modelos multimodales pequeños como fallback
-    (objetivo: hasta 4B de parámetros).
-4. Sugerir productos existentes en el catálogo de cada organización.
-5. Sugerir cuentas contables según la configuración de cada compañía.
-6. Permitir que contadores revisen, corrijan y validen las predicciones.
-7. Conservar por separado el documento original, las predicciones de
-    cada ejecución y el resultado validado.
-8. Generar métricas y exportaciones reproducibles para comparar modelos
-    y estrategias.
+   (estrategia primaria) y modelos multimodales pequeños como fallback
+   (objetivo: hasta 4B de parámetros).
+4. Revisar cada factura con sus campos de encabezado e ítems editables y el
+   archivo original al lado.
+5. Sugerir productos existentes en el catálogo de cada organización.
+6. Sugerir cuentas contables según la configuración de cada compañía.
+7. Permitir que contadores revisen, corrijan y confirmen la extracción.
+8. Enviar excepciones a una cola de revisores, con devolución, exclusión y
+   segunda revisión.
+9. Generar o actualizar **una factura borrador de proveedor** por factura
+   confirmada, sin publicarla.
+10. Conservar por separado el documento original, las predicciones de cada
+    ejecución, las correcciones y el resultado validado.
+11. Generar métricas y exportaciones reproducibles para comparar modelos y
+    estrategias.
 
-**Alcance inicial:** plataforma de evaluación y generación de dataset.
-No se busca todavía automatizar la contabilización definitiva ni
-implementar anonimización automática.
+**Alcance inicial:** plataforma de evaluación, generación de dataset y
+revisión contable asistida. La confirmación crea una factura **borrador**; la
+publicación y contabilización definitiva quedan fuera de alcance, al igual que
+la anonimización automática.
 
 ## 2. Estado actual del proyecto (avances)
 
 Los componentes base ya existen y están en distinto grado de madurez:
 
-  Activo                                  Repositorio / ubicación                           Estado
-  --------------------------------------- ------------------------------------------------- ----------------------------------------------------------------------------------------------------------------
-  Entorno Odoo 19 CE                      `soltec-localdev19-ocr/`                          Docker Compose funcional (web + db + pgadmin), imagen SolTec 19-dev, addons en `/mnt/custom-addons`.
-  Localización argentina para Odoo 19     `Mueve-TEC/odoo-argentina` rama `19.0`            Stack mantenido por el equipo; provee l10n_ar completo (afipws, padron, retenciones, etc.). **No hace falta portar desde 16.**
-  Módulo QR ARCA                          `odoo-argentina-invoice-ocr/l10n_ar_factura_qr`   Maduro (desarrollado en 16, migrado a 19): pyzbar + pdf2image con escalado 200→600 DPI, filtrado multi-QR por firma `?p=`, creación de borradores de facturas de proveedor, partner por CUIT, productos por proveedor, impuestos por tipo de comprobante, log de auditoría `ocr.arca.scan`.
-  Módulo ítems por capa de texto          `odoo-argentina-invoice-ocr/l10n_ar_factura_items` (v19.0.1.1.0)   Puerto fiel de `TextExtractionStrategy` de `facturas-backend-UNC-PSI`; parsea tablas de ítems del texto del PDF (código, cantidad, bonificación, subtotal); fallback a línea genérica desde QR; contrato de auditoría de extracción; tests.
-  Servicio de extracción VLM              `invoice-item-extractor/`                         FastAPI + Pydantic v2, endpoints `/extract`, `/models`, ciclo de vida vLLM gestionado, detección de capacidades de visión, prompt en español con catálogo fijo de impuestos (IVA 21/10.5/27/0/Exen/No Corresp, P. IIBB, percepciones), JSON Schema estricto con reintento sin esquema, normalización de números AR (`8.500,00`), CI (ruff, mypy, pytest).
-  Benchmark de modelos                    `invoice-item-extractor/benchmark/`               Runner sobre datasets, P/R/F1 por ítem (matching difuso ≥0.6), exactitud por campo, impuestos como conjunto exacto, leaderboard, barridos de concurrencia y recursos, reporte HTML autocontenido.
-  Datasets                                `invoice-item-extractor/eval/`                    Dataset sintéctico versionado + dataset real anotado como submódulo privado (`facturas-argentinas`) con ground truth, manifiestos y fingerprints; política de datos real definida (nunca se commitea).
-  Punto de integración VLM                ADR-0004 (`docs/adr/` del OCR repo)               Define el fallback LLM en `l10n_ar_factura_items`: capa de texto primero; VLM vía API del extractor cuando falla o no hay capa de texto.
-  Entorno Odoo 16 (histórico)             `soltec-localdev16-ocr/`                         Predecesor con stack 16 completo; fuente de referencia, no objetivo.
-  Prototipos iniciales (históricos)       `ocr-scripts/`, `facturas-backend-UNC-PSI/`       Superseded. `ocr-scripts` consolidó las decisiones pyzbar (se descartó `qreader` por dependencias de libtorch) y PyAfipWs/padrón. `facturas-backend-UNC-PSI` aportó la estrategia de texto y el flujo Gemini/Sheets (ver riesgos).
+Activo Repositorio / ubicación Estado
 
-**Trabajo netamente nuevo** (no existe todavía):
+---
 
-- Multi-tenencia por organizaciones con reglas de acceso y pruebas de
-    aislamiento.
-- Persistencia en Odoo de ejecuciones, predicciones y validaciones
-    (modelo de datos de evaluación).
-- Interfaz de revisión humana (pantalla de tres áreas).
-- Sugerencias de productos y cuentas contables.
-- Métricas operativas y de validación humana dentro de Odoo.
-- Exportación de datasets validados desde Odoo.
+Entorno Odoo 19 CE `soltec-localdev19-ocr/` Docker Compose funcional (web + db + pgadmin), imagen SolTec 19-dev, addons en `/mnt/custom-addons`.
+Localización argentina para Odoo 19 `Mueve-TEC/odoo-argentina` rama `19.0` Stack mantenido por el equipo; provee l10n_ar completo (afipws, padron, retenciones, etc.). **No hace falta portar desde 16.**
+Módulo QR ARCA `odoo-argentina-invoice-ocr/l10n_ar_factura_qr` Maduro (desarrollado en 16, migrado a 19): pyzbar + pdf2image con escalado 200→600 DPI, filtrado multi-QR por firma `?p=`, creación de borradores de facturas de proveedor, partner por CUIT, productos por proveedor, impuestos por tipo de comprobante, log de auditoría `ocr.arca.scan`.
+Módulo ítems por capa de texto `odoo-argentina-invoice-ocr/l10n_ar_factura_items` (v19.0.1.1.0) Puerto fiel de `TextExtractionStrategy` de `facturas-backend-UNC-PSI`; parsea tablas de ítems del texto del PDF (código, cantidad, bonificación, subtotal); fallback a línea genérica desde QR; contrato de auditoría de extracción; tests.
+Servicio de extracción VLM `invoice-item-extractor/` FastAPI + Pydantic v2, endpoints `/extract`, `/models`, ciclo de vida vLLM gestionado, detección de capacidades de visión, prompt en español con catálogo fijo de impuestos (IVA 21/10.5/27/0/Exen/No Corresp, P. IIBB, percepciones), JSON Schema estricto con reintento sin esquema, normalización de números AR (`8.500,00`), CI (ruff, mypy, pytest).
+Benchmark de modelos `invoice-item-extractor/benchmark/` Runner sobre datasets, P/R/F1 por ítem (matching difuso ≥0.6), exactitud por campo, impuestos como conjunto exacto, leaderboard, barridos de concurrencia y recursos, reporte HTML autocontenido.
+Datasets `invoice-item-extractor/eval/` Dataset sintéctico versionado + dataset real anotado como submódulo privado (`facturas-argentinas`) con ground truth, manifiestos y fingerprints; política de datos real definida (nunca se commitea).
+Punto de integración VLM ADR-0004 (`docs/adr/` del OCR repo) Define el fallback LLM en `l10n_ar_factura_items`: capa de texto primero; VLM vía API del extractor cuando falla o no hay capa de texto.
+App contable (módulo Odoo) `odoo-argentina-invoice-ocr/account_invoice_ai_platform` Implementada (v19.0.1.6.0): inicio de lotes, carga multiarchivo, workspace de revisión, confirmación a factura borrador, cola de revisores, segunda revisión, actividades y traducciones es_AR.
+Diseño UX/UI y plan de la app `docs/accountant-app-v1.md` Entrevista de diseño cerrada; fases 1–3 implementadas; umbral por monto alto diferido.
+Entorno Odoo 16 (histórico) `soltec-localdev16-ocr/` Predecesor con stack 16 completo; fuente de referencia, no objetivo.
+Prototipos iniciales (históricos) `ocr-scripts/`, `facturas-backend-UNC-PSI/` Superseded. `ocr-scripts` consolidó las decisiones pyzbar (se descartó `qreader` por dependencias de libtorch) y PyAfipWs/padrón. `facturas-backend-UNC-PSI` aportó la estrategia de texto y el flujo Gemini/Sheets (ver riesgos).
+
+**Implementado en la app contable (noviembre 2026):**
+
+- Lotes (`account.invoice.ai.batch`) con carga multiarchivo, estado y
+  contadores; cola “Sin lote” para documentos de integraciones.
+- Workspace de revisión de dos paneles (formulario + visor), cola viva,
+  autosave, campos de encabezado, ítems, impuestos, matching y atajos.
+- Confirmación que crea/actualiza una factura borrador, con detección de
+  duplicados, control de CUIT del proveedor y guardas de importes.
+- Integración l10n_ar: tipos de comprobante (incl. recibos y tickets, con
+  nombres es_AR), validación de receptor/CAE, disponibilidad de comprobantes
+  según responsabilidad ARCA, perfil fiscal del proveedor, mapeo de impuestos
+  por códigos AFIP, alícuotas de IVA, posición fiscal y validación de
+  moneda/UoM/número.
+- Cola de revisores con devolución, exclusión y segunda revisión; actividades
+  de Odoo y puente “Abrir en la app” desde el formulario de documento.
+- Registro de correcciones por campo, traducciones es_AR y shell dedicado
+  para contadores; consola de evaluación conservada para managers e
+  investigadores.
+- Visor: las imágenes generan un PDF derivado para usar el visor PDF incrustado;
+  el original se conserva intacto y el preview se elimina al confirmar y se
+  regenera al reabrir.
+- Base demo `demo_ar`: Argentina como país, ARS y es_AR; dos organizaciones,
+  tres compañías con plan `ar_ri`, doce usuarios de todos los roles,
+  proveedores RI/Monotributo/Exento y lotes/documentos de ejemplo.
+- Pruebas: suites propias para el núcleo de evaluación y la app; la corrida
+  final combinada reportó 83 tests. Pre-commit y verificación de UI con
+  Playwright.
+
+**Pendiente / fuera de v1:**
+
+- Umbral de revisión por monto alto (diferido).
+- Asignación explícita de lotes/documentos, notificaciones por email y
+  dashboard de la app.
+- Resaltado de líneas sobre el PDF (requiere bounding boxes; hoy no se
+  extraen).
+- Piloto con contadores, endurecimiento operativo y anonimización.
 
 ## 3. Decisiones de diseño (cerradas)
 
-# Decisión                                                    Resolución
+# Decisión Resolución
 
-  --- ----------------------------------------------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  1   Encuadre del plan                                          Roadmap de integración: mapear activos existentes, construir solo los faltantes.
-  2   Tamaño de modelos                                          **Objetivo ≤4B** como restricción del proyecto (costo de despliegue local). Modelos mayores evaluados en el benchmark (gemma4-26b, Qwen2.5-VL-7B, Qwen3-VL-8B, GLM-OCR) se usan como **referencias/baselines**, no como objetivo.
-  3   Plataforma                                                 **Odoo 19 CE + stack `Mueve-TEC/odoo-argentina` rama `19.0`** (mantenido por el equipo). Sin port manual desde 16.
-  4   Estrategia de extracción de ítems                          **ADR-0004:** capa de texto del PDF primero (`l10n_ar_factura_items`); fallback a VLM vía API de `invoice-item-extractor` cuando no hay capa de texto o el parseo falla.
-  5   División de la evaluación                                  Benchmark a nivel modelo (P/R/F1, leaderboards) **permanece en `invoice-item-extractor`**. Odoo calcula métricas **operativas y de validación humana** (tiempos de revisión, categorías de error, matching) sobre uso real.
-  6   Ubicación del código de evaluación                          **Módulo nuevo** (`account_invoice_ai_evaluation`) para organizaciones, documentos, ejecuciones, predicciones, validaciones, UI de revisión y métricas. `l10n_ar_factura_qr` y `l10n_ar_factura_items` se mantienen como están y se conectan al nuevo módulo.
-  7   Multi-tenencia en el piloto                                Reglas de aislamiento entre organizaciones se construyen y **prueban antes de incorporar equipos**; el humo de prueba inicial se hace con una sola organización; el piloto formal incorpora **2–3 equipos en paralelo, 500+ facturas reales**.
-  8   Despliegue de inferencia en el piloto                      **Instancia vLLM externa con múltiples modelos** disponibles; la API del extractor sigue siendo el único punto de entrada desde Odoo.
+---
+
+1 Encuadre del plan Roadmap de integración: mapear activos existentes, construir solo los faltantes.
+2 Tamaño de modelos **Objetivo ≤4B** como restricción del proyecto (costo de despliegue local). Modelos mayores evaluados en el benchmark (gemma4-26b, Qwen2.5-VL-7B, Qwen3-VL-8B, GLM-OCR) se usan como **referencias/baselines**, no como objetivo.
+3 Plataforma **Odoo 19 CE + stack `Mueve-TEC/odoo-argentina` rama `19.0`** (mantenido por el equipo). Sin port manual desde 16.
+4 Estrategia de extracción de ítems **ADR-0004:** capa de texto del PDF primero (`l10n_ar_factura_items`); fallback a VLM vía API de `invoice-item-extractor` cuando no hay capa de texto o el parseo falla.
+5 División de la evaluación Benchmark a nivel modelo (P/R/F1, leaderboards) **permanece en `invoice-item-extractor`**. Odoo calcula métricas **operativas y de validación humana** (tiempos de revisión, categorías de error, matching) sobre uso real.
+6 Ubicación del código de evaluación **Módulo nuevo** (`account_invoice_ai_evaluation`) para organizaciones, documentos, ejecuciones, predicciones, validaciones, UI de revisión y métricas. `l10n_ar_factura_qr` y `l10n_ar_factura_items` se mantienen como están y se conectan al nuevo módulo.
+7 Multi-tenencia en el piloto Reglas de aislamiento entre organizaciones se construyen y **prueban antes de incorporar equipos**; el humo de prueba inicial se hace con una sola organización; el piloto formal incorpora **2–3 equipos en paralelo, 500+ facturas reales**.
+8 Despliegue de inferencia en el piloto **Instancia vLLM externa con múltiples modelos** disponibles; la API del extractor sigue siendo el único punto de entrada desde Odoo.
+9 App contable **Módulo nuevo `account_invoice_ai_platform`** sobre el núcleo de evaluación; la UI de contadores no se mezcla con la consola de investigación.
+10 Unidad de trabajo **Lote** (`account.invoice.ai.batch`), una organización/compañía por lote; documentos de integraciones en la cola “Sin lote”.
+11 Confirmación contable La confirmación genera/actualiza **una factura borrador** (`account.move`) por factura. No se publica automáticamente; duplicados y CUIT de proveedor se controlan antes.
+12 Flujo de revisión Contadores confirman casos normales; revisores resuelven excepciones, devuelven, excluyen y solicitan segunda revisión. Actividades de Odoo; sin email en v1.
+13 UX de revisión Inicio de lotes + pantalla “Nuevo lote” + workspace de dos paneles (formulario/visor) + cola de revisores. La consola de evaluación queda para managers/investigadores.
+14 Fuera de v1 Umbral por monto alto, asignación explícita, email, resaltado de líneas, dashboard de app y publicación automática.
 
 ### 3.1. Uso de documentos y confidencialidad
 
@@ -86,10 +132,10 @@ de confidencialidad y no difusión** que establezca, como mínimo:
 - Quién puede acceder a ellos.
 - Para qué se utilizarán durante la evaluación.
 - Si se autoriza su uso posterior para investigación, evaluación y
-    entrenamiento o ajuste de modelos.
+  entrenamiento o ajuste de modelos.
 - Cómo se conservarán, protegerán y eventualmente eliminarán los datos.
 - Que no se publicarán documentos ni datos identificatorios sin
-    autorización específica.
+  autorización específica.
 
 El acuerdo debe ser revisado por asesoramiento legal. La firma de un
 acuerdo no reemplaza los controles técnicos de seguridad ni las
@@ -111,7 +157,7 @@ a datasets compartidos, sin modificar ni sobrescribir los originales.
 
 ## 4. Arquitectura
 
-``` text
+```text
                 Usuarios / Contadores
                          |
                          v
@@ -173,26 +219,26 @@ No ejecutar inferencias dentro de una petición HTTP interactiva de Odoo.
 ## 5. Flujo de procesamiento de una factura
 
 1. **Carga:** PDF (digital o escaneado), JPG, PNG, fotografía, TIFF. Se
-    conserva el original y se calcula hash (detección de duplicados).
+   conserva el original y se calcula hash (detección de duplicados).
 2. **QR ARCA** (`l10n_ar_factura_qr`, existe): lectura multi-página con
-    escalado de DPI, filtrado multi-QR, parseo del payload `?p=` base64,
-    creación de borrador de factura de proveedor y partner por CUIT.
-    Datos QR registrados como fuente independiente, con estado y errores.
+   escalado de DPI, filtrado multi-QR, parseo del payload `?p=` base64,
+   creación de borrador de factura de proveedor y partner por CUIT.
+   Datos QR registrados como fuente independiente, con estado y errores.
 3. **Ítems — capa de texto** (`l10n_ar_factura_items`, existe): si el
-    PDF tiene texto seleccionable, parseo de la tabla de ítems
-    (código, cantidad, bonificación, subtotal). Estrategia primaria:
-    barata y exacta.
+   PDF tiene texto seleccionable, parseo de la tabla de ítems
+   (código, cantidad, bonificación, subtotal). Estrategia primaria:
+   barata y exacta.
 4. **Ítems — fallback VLM** (ADR-0004, a integrar): sin capa de texto o
-    parseo fallido → renderizado de páginas y llamada al extractor.
-    Elección de modelo configurable; se registra modelo, versión,
-    prompt, parámetros y respuesta cruda.
+   parseo fallido → renderizado de páginas y llamada al extractor.
+   Elección de modelo configurable; se registra modelo, versión,
+   prompt, parámetros y respuesta cruda.
 5. **Revisión humana** (nuevo): pantalla de tres áreas — documento /
-    extracción / matching. Corrección de campos, marcado de ilegibles,
-    rechazo de ejecución, nueva ejecución con otro modelo.
+   extracción / matching. Corrección de campos, marcado de ilegibles,
+   rechazo de ejecución, nueva ejecución con otro modelo.
 6. **Validación:** resultado aprobado queda como ground truth,
-    separado de las predicciones. Nunca se sobrescriben ejecuciones.
+   separado de las predicciones. Nunca se sobrescriben ejecuciones.
 7. **Métricas y exportación:** comparación ejecución vs. validación;
-    exportación JSONL/CSV con manifiesto versionado.
+   exportación JSONL/CSV con manifiesto versionado.
 
 ### Procedencia de cada dato
 
@@ -205,6 +251,30 @@ sobrescribir silenciosamente los resultados del VLM ni viceversa.
 Nombres orientativos en `account_invoice_ai_evaluation` (o el prefijo
 que se ajuste a las convenciones del repo OCR):
 
+### Cambios implementados para la app contable (v1)
+
+Además del modelo de evaluación, `account_invoice_ai_platform` agrega:
+
+- `account.invoice.ai.batch`: nombre/secuencia, organización, compañía,
+  uploader, notas, flag de fallback IA, estado (`uploading`, `processing`,
+  `in_review`, `completed`, `cancelled`), contadores, cierre y documentos.
+- `account.invoice.ai.document`: `batch_id`, `review_state` (`pending`,
+  `in_progress`, `waiting_reviewer`, `returned`, `confirmed`, `excluded`),
+  `review_reason`, claim blando (`claimed_by/at`), pedido de revisión,
+  devolución y auditoría de confirmación/exclusión.
+- `account.invoice.ai.annotation`: campos de encabezado (`partner_id`, tipo
+  de comprobante, punto de venta, número, fechas, moneda, subtotal, IVA,
+  otros impuestos y total), `second_review_requested_by/at`,
+  `second_review_notes`, `second_reviewed_at`; las líneas agregan
+  `tax_ids` y `tax_labels`.
+- `account.invoice.ai.annotation.line`: impuestos seleccionados y etiquetas
+  extraídas, además de los campos de ítem existentes.
+- `account.invoice.ai.correction`: registro campo a campo de correcciones
+  humanas (encabezado y líneas), con valor anterior/nuevo, categoría,
+  usuario y fecha.
+- El documento conserva además la factura borrador vinculada (`invoice_id`)
+  y el lote; el flujo de confirmación actualiza un único borrador.
+
 ### `account.invoice.ai.organization`
 
 Equipo contable participante. Campos: `name`, `active`, `user_ids`,
@@ -215,7 +285,7 @@ restringido.
 
 ### Ciclo de vida de una factura
 
-``` text
+```text
 uploaded
    |
    v
@@ -240,6 +310,11 @@ Las ejecuciones individuales tienen su propio estado (`pending`,
 validada respecto de una ejecución y tener otras ejecuciones pendientes
 de revisión: el estado del documento no implica el de todas sus runs.
 
+En la app contable, `processing_state` convive con `review_state`; los
+estados visibles para contadores son: listo para revisar, en revisión,
+esperando revisor, devuelto, confirmado, excluido y fallido/requiere
+corrección.
+
 ### `account.invoice.ai.document`
 
 Factura cargada. Campos: `organization_id`, `company_id`,
@@ -263,12 +338,14 @@ se sobrescriben. Las ejecuciones de capa de texto también se registran
 **Estrategia y modelo son dimensiones independientes.** El esquema debe
 permitir comparar combinaciones sin acoplarse a la estrategia actual:
 
-  Estrategia       Modelo / componente
-  ---------------- --------------------
-  Capa de texto    Parser v1 (`l10n_ar_factura_items`)
-  VLM              Qwen2.5-VL-3B
-  VLM              Gemma 4 E4B
-  OCR + VLM        Pipeline experimental
+Estrategia Modelo / componente
+
+---
+
+Capa de texto Parser v1 (`l10n_ar_factura_items`)
+VLM Qwen2.5-VL-3B
+VLM Gemma 4 E4B
+OCR + VLM Pipeline experimental
 
 ### `account.invoice.ai.line`
 
@@ -310,11 +387,11 @@ registran también las selecciones de matching (`selected_product_id`,
 un contador es automáticamente ground truth:
 
 - Revisión secundaria configurable (empezar con una sola revisión;
-    habilitar la segunda para casos dudosos).
+  habilitar la segunda para casos dudosos).
 - Registro de discrepancias entre contadores y su resolución.
 - Identificación explícita de campos ilegibles o ambiguos.
 - Historial de modificaciones de anotaciones (versionado: cada cambio
-    genera una versión nueva, sin sobrescribir).
+  genera una versión nueva, sin sobrescribir).
 
 ## 7. Matching de productos y cuentas contables (post-extracción)
 
@@ -338,35 +415,58 @@ etiquetas universales entre organizaciones.
 
 ## 8. Interfaz de usuario
 
-### 8.1. Bandeja de documentos
+La app está implementada como client actions de Owl en
+`account_invoice_ai_platform`; el diseño completo está en
+`docs/accountant-app-v1.md`.
 
-Vistas por estado: pendientes de procesamiento / en curso / pendientes
-de revisión / validados / con errores. Filtros por organización,
-compañía, proveedor, fecha, formato, estrategia (texto/VLM), modelo y
-estado.
+### 8.1. Inicio de la app
 
-### 8.2. Pantalla de revisión (tres áreas)
+- Lotes con progreso, contadores y estado.
+- “Mis pendientes” (documentos reclamados por el usuario o devueltos a él).
+- Cola “Sin lote” para documentos creados por integraciones/QR.
+- Cola “Revisión” para revisores, con contador en vivo.
+- Acceso directo a “Nuevo lote”.
 
-1. **Documento:** PDF/imagen original, navegación de páginas, zoom.
-2. **Extracción:** ítems y campos, editables; identificación clara de
-    qué valores son predichos, corregidos o provienen del QR.
-3. **Matching:** productos y cuentas sugeridos, candidatos alternativos,
-    selección manual.
+### 8.2. Nuevo lote
 
-Acciones: confirmar extracción, corregir campos, marcar dato ilegible o
-no identificable, marcar ítem no clasificable, rechazar ejecución,
-solicitar nueva ejecución con otro modelo.
+- Pantalla de página completa con drag & drop multiarchivo.
+- Organización/compañía, nombre y notas opcionales, switch de fallback IA.
+- Validación de tipos y límites (100 archivos/25 MB por defecto), estado por
+  archivo y errores.
 
-### 8.3. Roles
+### 8.3. Workspace de revisión
 
-- **Administrador de plataforma:** participantes, configuración
-    global, modelos.
-- **Administrador de organización:** usuarios y compañías de su equipo.
-- **Contador validador:** carga, revisa y corrige documentos de su
-    organización.
-- **Revisor:** verifica validaciones, resuelve casos ambiguos.
-- **Investigador/evaluador:** resultados autorizados y métricas, sin
-    acceso innecesario a documentos originales.
+- Cola viva de documentos del lote en la parte superior.
+- Dos paneles: formulario editable a la izquierda, visor PDF/imagen a la
+  derecha.
+- Encabezado editable: proveedor, tipo, punto de venta, número, fechas,
+  moneda, subtotal, IVA, otros impuestos y total.
+- Ítems editables en grilla; detalle de la línea seleccionada con producto,
+  cuenta, impuestos, unidad, código, descuento y marcas de ilegible/ambiguo;
+  sugerencias de matching inline.
+- Autosave, guardado visible, “Confirmar y siguiente”, “Enviar a revisión”,
+  “Saltar”, reintento de extracción, reapertura y resumen del lote.
+- Revisores: confirmar, devolver al contador con nota, excluir con motivo,
+  solicitar segunda revisión o completarla (el solicitante no puede
+  completar ni confirmar su propia segunda revisión).
+
+### 8.4. Roles
+
+- **Administrador de plataforma:** configuración global, modelos, todas las
+  organizaciones.
+- **Administrador de organización:** usuarios, compañías y acuerdos de su
+  organización.
+- **Contador validador:** carga, revisa y confirma facturas; envía
+  excepciones a revisión.
+- **Revisor:** resuelve excepciones, devuelve, excluye y gestiona segundas
+  revisiones. Designado en cada organización; el Platform Manager es el
+  respaldo global.
+- **Investigador/evaluador:** consola de evaluación y resultados autorizados,
+  sin acceso innecesario a los originales.
+
+La consola de evaluación (Documents, Runs, Annotations, Predictions, Metrics,
+Exports) se mantiene para managers/investigadores; el contador ve el shell
+dedicado.
 
 ## 9. Seguridad y gobernanza de datos
 
@@ -374,13 +474,13 @@ Requisitos del MVP:
 
 - Acuerdo de confidencialidad firmado antes de habilitar la carga.
 - Acceso por organización y compañía; reglas de registro específicas
-    para todos los modelos personalizados.
+  para todos los modelos personalizados.
 - **Pruebas automatizadas de aislamiento entre organizaciones**
-    (condición de entrada del piloto multi-equipo).
+  (condición de entrada del piloto multi-equipo).
 - **Seguridad de adjuntos (`ir.attachment`):** proteger los registros
-    no alcanza. Verificar explícitamente el acceso a los archivos,
-    especialmente con `public`, `access_token`, adjuntos vinculados a
-    otros modelos o URLs de descarga. Pruebas específicas (Etapa 1):
+  no alcanza. Verificar explícitamente el acceso a los archivos,
+  especialmente con `public`, `access_token`, adjuntos vinculados a
+  otros modelos o URLs de descarga. Pruebas específicas (Etapa 1):
   - Acceso directo a la URL del adjunto.
   - Acceso a través del modelo de documento.
   - Descarga por otro usuario de la misma organización (permitida).
@@ -392,15 +492,15 @@ Requisitos del MVP:
 - Política documentada de conservación y eliminación.
 - No enviar documentos a servicios externos no autorizados.
 - Consentimiento diferenciado: evaluar modelos ≠ usar documentos en
-    entrenamiento o fine-tuning.
+  entrenamiento o fine-tuning.
 
 ### Issues de seguridad abiertos
 
 - **Barrido de secretos en todos los repositorios** del proyecto antes
-    de abrir el piloto (por ejemplo con gitleaks/trufflehog), incluidos
-    submódulos y datasets.
+  de abrir el piloto (por ejemplo con gitleaks/trufflehog), incluidos
+  submódulos y datasets.
 - La decisión `qreader` → `pyzbar` (dependencias libtorch) ya está
-    cerrada y consolidada en los módulos actuales; no reabrir.
+  cerrada y consolidada en los módulos actuales; no reabrir.
 
 ## 10. Métricas y evaluación
 
@@ -419,7 +519,7 @@ Estas métricas comparan modelos y prompts **antes** del piloto.
 - Porcentaje de documentos que requieren reprocesamiento.
 - Porcentaje de ítems corregidos por campo; categorías de error.
 - Proporción capa de texto vs. fallback VLM (cobertura de cada
-    estrategia).
+  estrategia).
 
 ### Matching
 
@@ -454,17 +554,20 @@ Se reutilizará la política de datasets de `invoice-item-extractor/eval`
 
 ## 12. Organización de módulos y repositorios
 
-``` text
+```text
 odoo-argentina-invoice-ocr/            # existe (rama 19.0-dev)
 ├── l10n_ar_factura_qr/                # existe: QR ARCA + borradores
 ├── l10n_ar_factura_items/             # existe: ítems por capa de texto
 │                                      # ADR-0004: punto del fallback VLM
 ├── docs/adr/                          # ADRs 0001-0004
-└── account_invoice_ai_evaluation/     # NUEVO: orgs, documents, runs,
-                                       # lines, predictions, validations,
-                                       # annotations (ground truth),
-                                       # UI revisión, métricas operativas,
-                                       # exportaciones
+├── docs/accountant-app-v1.md          # diseño UX/UI y plan de la app
+├── account_invoice_ai_evaluation/     # núcleo de evaluación: orgs, documents,
+│                                      # runs, lines, predictions, validations,
+│                                      # annotations (ground truth), métricas
+│                                      # operativas y exportaciones
+└── account_invoice_ai_platform/       # app contable (v19.0.1.6.0): batches,
+                                       # workspace, factura borrador, revisores,
+                                       # shell, correcciones y traducciones
 
 Mueve-TEC/odoo-argentina (19.0)        # existe: l10n_ar completo
 
@@ -476,34 +579,57 @@ invoice-item-extractor/                # existe: API VLM + benchmark
 soltec-localdev19-ocr/                 # existe: entorno Compose
 ```
 
-Empezar con el módulo de evaluación monolítico y extraer subcomponentes
-(matching, exportación) solo cuando exista necesidad concreta.
+La separación actual es: `account_invoice_ai_evaluation` conserva el núcleo
+de datos/evaluación; `account_invoice_ai_platform` contiene la app contable y la
+presentación. Extraer subcomponentes (matching, exportación) solo cuando exista
+necesidad concreta.
 
 ## 13. Plan de implementación por etapas
 
 Prioridades de desarrollo:
 
-  Prioridad   Trabajo                                    Resultado
-  ----------- ------------------------------------------ ---------------------------
-  P0          Seguridad y credenciales                   Entorno habilitado
-  P1          Multi-tenencia y modelos de evaluación     Núcleo de Odoo
-  P2          Integración del fallback VLM               Pipeline completo
-  P3          Revisión y anotación humana                Dataset confiable
-  P4          Piloto con contadores                      Datos reales
-  P5          Matching                                   Productos y cuentas
-  P6          Métricas y exportación avanzada            Benchmark operativo
-  P7          Anonimización                              Dataset compartible
+Prioridad Trabajo Resultado
+
+---
+
+P0 Seguridad y credenciales Entorno habilitado
+P1 Multi-tenencia y modelos de evaluación Núcleo de Odoo
+P2 Integración del fallback VLM Pipeline completo
+P3 Revisión y anotación humana Dataset confiable
+P4 Piloto con contadores Datos reales
+P5 Matching Productos y cuentas
+P6 Métricas y exportación avanzada Benchmark operativo
+P7 Anonimización Dataset compartible
+
+### Estado de implementación (noviembre 2026)
+
+Etapa Estado Notas
+
+---
+
+Etapa 0 Parcial Barrido de secretos registrado; rotación de credenciales de UNC-PSI pendiente de verificación.
+Etapa 1 Implementada Modelos, aislamiento, ACL y tests.
+Etapa 2 Implementada Texto → VLM, cola, reintentos, settings y trazabilidad.
+Etapa 3 Implementada Workspace, annotation/versionado, correcciones y export JSONL.
+Etapa 4 En preparación Piloto con contadores; checklist QA, verificación de aislamiento y drill de backup/restore listos (`docs/pilot/qa-checklist.md`, `make pilot-check`). Falta ejecutarlo con equipos reales.
+Etapa 5 Implementada Matching de productos/cuentas y candidatos en la UI.
+Etapa 6 Parcial Métricas/export implementados; dashboard de app pendiente.
+Etapa 7 Pendiente Anonimización.
+App Implementada Fases 1–3: backend, UI contable y flujo de revisores; umbral por monto alto diferido.
+
+La app contable se implementó en paralelo a las etapas 1–3; el piloto de la
+Etapa 4 es el próximo hito.
 
 ### Etapa 0 — Preparación y cierre de seguridad **(bloqueante)**
 
 - Revocar y rotar credenciales commiteadas en `facturas-backend-UNC-PSI`.
-    *Bloqueante: no avanzar al piloto sin revocación completada.*
+  _Bloqueante: no avanzar al piloto sin revocación completada._
 - Barrido de secretos en todos los repositorios (incl. submódulos y
-    datasets).
+  datasets).
 - Definir acuerdo de confidencialidad y alcance de uso de datos.
 - Instancia Odoo 19 CE con stack `odoo-argentina` 19.0 en
-    `soltec-localdev19-ocr`; cargar compañías, catálogos e impuestos de
-    prueba.
+  `soltec-localdev19-ocr`; cargar compañías, catálogos e impuestos de
+  prueba.
 - Definir política de almacenamiento, backups y conservación.
 - Dataset inicial: 40+ PDFs `estandar_N.pdf` + dataset real privado.
 
@@ -515,11 +641,11 @@ credenciales cerrados.
 - Modelos `organization` / `document` / `run` / `line`.
 - Carga de archivos, hash, detección de duplicados, estados.
 - Registro de ejecuciones de capa de texto (ya existen) como runs
-    trazables.
+  trazables.
 - Roles, ACL y reglas de acceso; **pruebas automatizadas de
-    aislamiento entre organizaciones**.
+  aislamiento entre organizaciones**.
 - Pruebas de seguridad de adjuntos (`ir.attachment`): URLs directas,
-    tokens, descargas cruzadas entre organizaciones (ver §9).
+  tokens, descargas cruzadas entre organizaciones (ver §9).
 
 **Entregable:** plataforma que registra documentos y ejecuciones con
 trazabilidad completa. Condición de entrada para incorporar más de una
@@ -529,10 +655,10 @@ organización.
 
 - Integrar `l10n_ar_factura_items` → `invoice-item-extractor /extract`.
 - Cola asíncrona, reintentos, registro de modelo/versión/prompt/
-    parámetros/tiempos, respuesta cruda + normalizada.
+  parámetros/tiempos, respuesta cruda + normalizada.
 - Configuración de la instancia vLLM externa multi-modelo del piloto.
 - Validar con el benchmark existente que los modelos ≤4B candidatos
-    superan umbrales mínimos antes de conectarlos a Odoo.
+  superan umbrales mínimos antes de conectarlos a Odoo.
 
 **Entregable:** extracción de ítems reproducible con doble estrategia
 (texto → VLM) y trazabilidad por ejecución.
@@ -541,14 +667,14 @@ organización.
 
 - Pantalla de revisión de tres áreas.
 - Modelo `validation` (por ejecución) y modelo `annotation`
-    (referencia única por factura).
+  (referencia única por factura).
 - Control de calidad de anotaciones: revisión secundaria configurable,
-    registro y resolución de discrepancias, campos ilegibles/ambiguos,
-    versionado de modificaciones.
+  registro y resolución de discrepancias, campos ilegibles/ambiguos,
+  versionado de modificaciones.
 - Diferenciación predicción vs. anotación de referencia.
 - **Exportación básica de anotaciones (JSONL)** desde esta etapa, para
-    verificar temprano que los datos recolectados sirven para construir
-    el dataset; los dashboards avanzados quedan para la Etapa 6.
+  verificar temprano que los datos recolectados sirven para construir
+  el dataset; los dashboards avanzados quedan para la Etapa 6.
 
 **Entregable:** flujo de revisión que genera anotaciones confiables y
 exportables.
@@ -556,10 +682,10 @@ exportables.
 ### Etapa 4 — Piloto con contadores (single-org humo + multi-org formal)
 
 1. **Humo (1 organización):** validar el flujo completo end-to-end con
-    un equipo, corregir fricciones de UI.
+   un equipo, corregir fricciones de UI.
 2. **Piloto formal (2–3 organizaciones, 500+ facturas reales):**
-    onboarding con acuerdo firmado; reglas de aislamiento ya probadas;
-    métricas operativas activas desde el primer día.
+   onboarding con acuerdo firmado; reglas de aislamiento ya probadas;
+   métricas operativas activas desde el primer día.
 
 **Entregable:** dataset validado por contadores + métricas operativas
 reales por modelo/estrategia/formato.
@@ -577,9 +703,9 @@ compañía.
 
 - Dashboards de métricas operativas + matching en Odoo.
 - Comparación entre modelos ≤4B usando benchmark + resultados del
-    piloto.
+  piloto.
 - Exportación JSONL/CSV con manifiestos; splits de
-    entrenamiento/validación/prueba.
+  entrenamiento/validación/prueba.
 
 **Entregable:** benchmark reproducible basado en documentos validados por
 contadores.
@@ -594,20 +720,20 @@ filtración, publicación controlada.
 
 1. Un administrador puede crear organizaciones y asociar usuarios.
 2. Cada organización trabaja con varias compañías, con sus propios
-    productos, impuestos y cuentas.
+   productos, impuestos y cuentas.
 3. Un usuario no puede consultar documentos ni registros de otra
-    organización (probado automáticamente).
+   organización (probado automáticamente).
 4. Se cargan PDF digitales, PDF escaneados, imágenes y fotografías; el
-    original permanece intacto.
+   original permanece intacto.
 5. El QR ARCA se lee, parsea y registra con errores trazables
-    (`l10n_ar_factura_qr`).
+   (`l10n_ar_factura_qr`).
 6. Los ítems se extraen por capa de texto cuando existe, y por VLM
-    (≤4B) en fallback, cada estrategia registrada como run.
+   (≤4B) en fallback, cada estrategia registrada como run.
 7. Cada ejecución conserva estrategia, modelo, versión, prompt,
-    parámetros y respuesta cruda.
+   parámetros y respuesta cruda.
 8. Un contador corrige ítems y valida; cada factura conserva una
-    **anotación de referencia única** (versionada, con control de
-    calidad) y las predicciones quedan diferenciadas de ella.
+   **anotación de referencia única** (versionada, con control de
+   calidad) y las predicciones quedan diferenciadas de ella.
 9. Historial de ejecuciones por factura consultable.
 10. Métricas operativas básicas calculables en Odoo; benchmark de
     modelos ejecutable en `invoice-item-extractor`.
@@ -617,59 +743,75 @@ filtración, publicación controlada.
 13. Credenciales de `facturas-backend-UNC-PSI` revocadas y rotadas;
     barrido de secretos completado en todos los repositorios.
 
+**Estado a noviembre 2026:** los criterios 1–11 están cubiertos por la
+implementación y las pruebas automatizadas; la verificación operativa de
+backups (12) y la rotación de credenciales (13) quedan para el cierre de la
+Etapa 0/4. La confirmación genera facturas **borrador**, no publicadas. El
+piloto de la Etapa 4 aún no comenzó.
+
 ## 15. Riesgos y decisiones pendientes
 
-  Riesgo o decisión                   Tratamiento propuesto
-  ----------------------------------- -----------------------------------------------------------------
-  Filtración entre organizaciones     Reglas de acceso, pruebas automatizadas y auditoría; obligatorio antes del piloto multi-equipo.
-  Fallback VLM con modelos ≤4B por debajo del umbral   Benchmark existente define el umbral mínimo antes de conectar a Odoo; modelos mayores solo como baseline de referencia.
-  Cobertura de capa de texto baja en documentos reales   Medir proporción texto vs. VLM en el piloto; el fallback VLM absorbe el gap.
-  Documentos de baja calidad           Registrar calidad y permitir revisión manual.
-  Respuestas inconsistentes del VLM   JSON Schema estricto + reintento (ya en extractor) + conservación de respuesta cruda.
-  Cambios de modelo o prompt          Versionado obligatorio (ya en extractor; extender a Odoo).
-  Etiquetas humanas incorrectas       Estados de revisión y segunda validación.
-  Catálogos y cuentas diferentes      Contexto por compañía, sin IDs globales.
-  Duplicados                          Hash de archivo y controles de carga.
-  Costos de inferencia                Instancia vLLM externa compartida; medición por página y límites de concurrencia.
-  Credenciales commiteadas (UNC-PSI)  Revocación, rotación y limpieza de historial (Etapa 0).
-  Uso de datos para entrenamiento     Consentimiento específico y trazabilidad del alcance autorizado.
-  Anonimización incompleta            No publicar datasets sin proceso futuro de anonimización y control.
+Riesgo o decisión Tratamiento propuesto
 
-Decisiones a cerrar durante el diseño: tamaño máximo de archivos y
-páginas; formatos adicionales; política de conservación y eliminación;
-almacenar imágenes renderizadas vs. regenerarlas bajo demanda; política
-de doble revisión; alcance exacto de la autorización para evaluación,
-investigación y entrenamiento.
+---
+
+Filtración entre organizaciones Reglas de acceso, pruebas automatizadas y auditoría; obligatorio antes del piloto multi-equipo.
+Fallback VLM con modelos ≤4B por debajo del umbral Benchmark existente define el umbral mínimo antes de conectar a Odoo; modelos mayores solo como baseline de referencia.
+Cobertura de capa de texto baja en documentos reales Medir proporción texto vs. VLM en el piloto; el fallback VLM absorbe el gap.
+Documentos de baja calidad Registrar calidad y permitir revisión manual.
+Respuestas inconsistentes del VLM JSON Schema estricto + reintento (ya en extractor) + conservación de respuesta cruda.
+Cambios de modelo o prompt Versionado obligatorio (ya en extractor; extender a Odoo).
+Etiquetas humanas incorrectas Estados de revisión y segunda validación.
+Catálogos y cuentas diferentes Contexto por compañía, sin IDs globales.
+Duplicados Hash de archivo + duplicado semántico (proveedor, tipo, punto de venta, número y año); bloqueo con override de revisor.
+Umbral por monto alto Diferido a una versión futura; por ahora las excepciones se revisan manualmente.
+Segunda revisión Manual; el solicitante no puede completarla ni confirmar; Platform Manager como respaldo.
+Lotes grandes Límite 100 archivos/25 MB; procesamiento por cron y cola visible; paginación fina pendiente.
+Notificaciones Actividades de Odoo + colas in-app; email diferido.
+Costos de inferencia Instancia vLLM externa compartida; medición por página y límites de concurrencia.
+Credenciales commiteadas (UNC-PSI) Revocación, rotación y limpieza de historial (Etapa 0).
+Uso de datos para entrenamiento Consentimiento específico y trazabilidad del alcance autorizado.
+Anonimización incompleta No publicar datasets sin proceso futuro de anonimización y control.
+
+**Decisiones cerradas en el diseño de la app:** confirmación = factura
+borrador (sin publicar); un lote por organización/compañía; cola compartida con
+claim blando; revisores designados por organización; segunda revisión manual;
+notificaciones por actividades; límites 100 archivos/25 MB; formatos
+PDF/JPG/PNG/TIFF; umbral por monto alto diferido.
+
+**Decisiones aún abiertas:** política de conservación/eliminación; almacenar
+imágenes renderizadas vs. regenerarlas; política exacta de segunda revisión para
+casos dudosos; alcance final de los consentimientos; métrica de materialidad
+para habilitar el umbral por monto; comportamiento en móviles.
 
 ## 16. Principios del proyecto
 
 1. **Trazabilidad:** cada resultado se asocia a documento, ejecución,
-    estrategia, modelo y versión.
+   estrategia, modelo y versión.
 2. **No sobrescritura:** predicciones y validaciones son registros
-    separados.
+   separados.
 3. **Aislamiento:** cada organización mantiene sus datos y contexto
-    contable.
+   contable.
 4. **Reproducibilidad:** comparaciones identifican modelos, prompts,
-    parámetros y versiones.
+   parámetros y versiones.
 5. **Human-in-the-loop:** las decisiones contables y los datos de
-    referencia se validan por personas.
+   referencia se validan por personas.
 6. **Separación de responsabilidades:** Odoo gestiona el flujo; el
-    extractor sirve inferencia; el l10n_ar provee la localización.
+   extractor sirve inferencia; el l10n_ar provee la localización.
 7. **Estrategia escalonada:** capa de texto primero (barata y exacta);
-    VLM solo como fallback.
+   VLM solo como fallback.
 8. **Privacidad desde el diseño:** permisos, acuerdos y controles de
-    acceso desde el MVP, aunque la anonimización sea posterior.
+   acceso desde el MVP, aunque la anonimización sea posterior.
 9. **Evolución gradual:** extracción y validación → piloto → matching
-    → evaluación integral → anonimización.
+   → evaluación integral → anonimización.
 
 ## Resultado esperado
 
-Al finalizar las primeras etapas se dispondrá de una instancia
-centralizada de Odoo 19 CE con localización argentina completa, en la
-que 2–3 equipos contables cargarán 500+ facturas reales, ejecutarán la
-doble estrategia de extracción (texto → VLM ≤4B), revisarán y corregirán
-los resultados, y generarán un historial estructurado de predicciones y
-validaciones. Ese historial, junto al benchmark existente del extractor,
-constituirá la base para comparar modelos, desarrollar estrategias de
-matching y, en una etapa posterior, construir datasets anonimizados
+La app contable ya está implementada sobre Odoo 19 CE con localización
+argentina: carga por lotes, workspace de revisión, confirmación a factura
+borrador y flujo de revisores con actividades. El siguiente hito es el piloto
+de la Etapa 4: 2–3 equipos contables, 500+ facturas reales, métricas operativas
+y validación del dataset. Ese historial, junto al benchmark existente del
+extractor, constituirá la base para comparar modelos, desarrollar estrategias
+de matching y, en una etapa posterior, construir datasets anonimizados
 destinados a investigación y entrenamiento.
