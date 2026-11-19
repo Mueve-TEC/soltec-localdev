@@ -10,11 +10,11 @@ make secret-scan SECRET_SCAN_PATHS=". ../invoice-item-extractor ../facturas-back
 
 ## Result
 
-| Path | Result |
-| --- | --- |
-| `soltec-localdev19-ocr` | No leaks found |
-| `invoice-item-extractor` | No leaks found |
-| `ocr-scripts` | No leaks found |
+| Path                       | Result                 |
+| -------------------------- | ---------------------- |
+| `soltec-localdev19-ocr`    | No leaks found         |
+| `invoice-item-extractor`   | No leaks found         |
+| `ocr-scripts`              | No leaks found         |
 | `facturas-backend-UNC-PSI` | 2 findings (see below) |
 
 ## Findings (redacted)
