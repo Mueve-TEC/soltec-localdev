@@ -22,6 +22,7 @@
 #   MAIN_PROJECT   (default: basename of the main checkout)
 #   MAIN_ROOT      (default: the main checkout, via git common dir)
 #   BASE_REF       (default: HEAD of the main checkout)  — used by `new`
+#   SUBMODULE_BASE_REF (default: origin/19.0)            — used by `new`
 #   SRC_DB         (default: admin)                      — used by `golden-refresh`
 
 set -euo pipefail
@@ -60,17 +61,43 @@ wait_http() {
 init_submodules() {
   local dir=$1
   local slug=$2
-  local branch
+  local base_ref=${SUBMODULE_BASE_REF:-origin/19.0}
+  local branch _sha path _rest sub src
   branch=$(slug_branch "$slug")
 
-  git -C "$dir" submodule update --init --recursive
+  if ! git -C "$dir" submodule update --init --recursive; then
+    warn "could not initialise submodules from their remotes; cloning from the main checkout"
+    while read -r _sha path _rest; do
+      [[ -n "${path:-}" ]] || continue
+      _sha=${_sha#[-+ ]}
+      sub="$dir/$path"
+      src="$MAIN_ROOT/$path"
+      [[ -e "$src/.git" ]] || continue
+      rm -rf "$sub"
+      git -c protocol.file.allow=always clone --quiet "$src" "$sub"
+      git -C "$sub" checkout -q "$_sha"
+      local origin_url
+      origin_url=$(git -C "$src" remote get-url origin 2>/dev/null || true)
+      if [[ -n "$origin_url" ]]; then
+        git -C "$sub" remote set-url origin "$origin_url"
+      fi
+      git -C "$dir" submodule absorbgitdirs "$path" 2>/dev/null || true
+    done < <(git -C "$dir" submodule status 2>/dev/null || true)
+  fi
 
   while read -r _sha path _rest; do
     [[ -n "${path:-}" ]] || continue
-    local sub="$dir/$path"
+    sub="$dir/$path"
     [[ -e "$sub/.git" ]] || continue
 
-    if git -C "$sub" fetch --quiet origin 19.0 2>/dev/null &&
+    if [[ -n "${SUBMODULE_BASE_REF:-}" ]] &&
+      { git -C "$sub" rev-parse --verify --quiet "$base_ref" >/dev/null ||
+        git -C "$sub" rev-parse --verify --quiet "refs/remotes/origin/$base_ref" >/dev/null; }; then
+      local resolved=$base_ref
+      git -C "$sub" rev-parse --verify --quiet "$resolved" >/dev/null ||
+        resolved="refs/remotes/origin/$base_ref"
+      git -C "$sub" checkout -q -B "$branch" "$resolved"
+    elif git -C "$sub" fetch --quiet origin 19.0 2>/dev/null &&
       git -C "$sub" rev-parse --verify --quiet refs/remotes/origin/19.0 >/dev/null; then
       if ! git -C "$sub" merge-base --is-ancestor HEAD refs/remotes/origin/19.0; then
         warn "$path: the recorded revision is not an ancestor of origin/19.0 (commits may diverge)"
@@ -84,7 +111,7 @@ init_submodules() {
 
   if ! git -C "$dir" diff --quiet -- submodules; then
     git -C "$dir" add submodules
-    git -C "$dir" commit -qm "[CHORE] $slug: start submodules at origin/19.0"
+    git -C "$dir" commit -qm "[CHORE] $slug: start submodules at $base_ref"
   fi
 }
 
@@ -129,7 +156,7 @@ cmd_new() {
   git -C "$MAIN_ROOT" worktree add -b "$branch" "$dir" "$base_sha"
   created=1
 
-  info "initialising submodules and branching them at origin/19.0"
+  info "initialising submodules and branching them at ${SUBMODULE_BASE_REF:-origin/19.0}"
   init_submodules "$dir" "$slug"
 
   info "syncing submodules/ -> custom-addons/"
