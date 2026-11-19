@@ -4,10 +4,11 @@
 
 > **Versión 3 (noviembre 2026).** Roadmap de integración actualizado tras la
 > implementación de la app contable: la evaluación, la carga por lotes, la
-> revisión, la confirmación a factura borrador y la cola de revisores ya están
+> revisión y la confirmación a factura borrador ya están
 > implementadas y probadas. El diseño UX/UI detallado vive en
 > `docs/accountant-app-v1.md`. El próximo hito es el piloto con contadores y el
-> endurecimiento operativo.
+> endurecimiento operativo. **Simplificación PoC (2026-11-19):** el flujo pasó
+> a un solo rol (sin revisores ni segunda revisión).
 
 ## 1. Objetivo
 
@@ -27,8 +28,8 @@ La plataforma permitirá:
 5. Sugerir productos existentes en el catálogo de cada organización.
 6. Sugerir cuentas contables según la configuración de cada compañía.
 7. Permitir que contadores revisen, corrijan y confirmen la extracción.
-8. Enviar excepciones a una cola de revisores, con devolución, exclusión y
-   segunda revisión.
+8. Resolver excepciones en el mismo flujo: confirmar con motivo obligatorio o
+   excluir con motivo (sin cola de revisores desde el 2026-11).
 9. Generar o actualizar **una factura borrador de proveedor** por factura
    confirmada, sin publicarla.
 10. Conservar por separado el documento original, las predicciones de cada
@@ -57,7 +58,7 @@ Servicio de extracción VLM `invoice-item-extractor/` FastAPI + Pydantic v2, end
 Benchmark de modelos `invoice-item-extractor/benchmark/` Runner sobre datasets, P/R/F1 por ítem (matching difuso ≥0.6), exactitud por campo, impuestos como conjunto exacto, leaderboard, barridos de concurrencia y recursos, reporte HTML autocontenido.
 Datasets `invoice-item-extractor/eval/` Dataset sintéctico versionado + dataset real anotado como submódulo privado (`facturas-argentinas`) con ground truth, manifiestos y fingerprints; política de datos real definida (nunca se commitea).
 Punto de integración VLM ADR-0004 (`docs/adr/` del OCR repo) Define el fallback LLM en `l10n_ar_factura_items`: capa de texto primero; VLM vía API del extractor cuando falla o no hay capa de texto.
-App contable (módulo Odoo) `odoo-argentina-invoice-ocr/account_invoice_ai_platform` Implementada (v19.0.1.6.0): inicio de lotes, carga multiarchivo, workspace de revisión, confirmación a factura borrador, cola de revisores, segunda revisión, actividades y traducciones es_AR.
+App contable (módulo Odoo) `odoo-argentina-invoice-ocr/account_invoice_ai_platform` Implementada (v19.0.1.7.0): inicio de lotes, carga multiarchivo, workspace de revisión, confirmación a factura borrador, excepciones con motivo obligatorio y traducciones es_AR. Rol revisor y segunda revisión eliminados (2026-11).
 Diseño UX/UI y plan de la app `docs/accountant-app-v1.md` Entrevista de diseño cerrada; fases 1–3 implementadas; umbral por monto alto diferido.
 Entorno Odoo 16 (histórico) `soltec-localdev16-ocr/` Predecesor con stack 16 completo; fuente de referencia, no objetivo.
 Prototipos iniciales (históricos) `ocr-scripts/`, `facturas-backend-UNC-PSI/` Superseded. `ocr-scripts` consolidó las decisiones pyzbar (se descartó `qreader` por dependencias de libtorch) y PyAfipWs/padrón. `facturas-backend-UNC-PSI` aportó la estrategia de texto y el flujo Gemini/Sheets (ver riesgos).
@@ -69,14 +70,19 @@ Prototipos iniciales (históricos) `ocr-scripts/`, `facturas-backend-UNC-PSI/` S
 - Workspace de revisión de dos paneles (formulario + visor), cola viva,
   autosave, campos de encabezado, ítems, impuestos, matching y atajos.
 - Confirmación que crea/actualiza una factura borrador, con detección de
-  duplicados, control de CUIT del proveedor y guardas de importes.
+  duplicados, control de CUIT del proveedor y guardas de importes. Las
+  excepciones bloqueantes (duplicados, CUIT de proveedor/receptor,
+  tipo de comprobante) se confirman con **motivo obligatorio por el propio
+  contador**; la factura publicada siempre bloquea.
 - Integración l10n_ar: tipos de comprobante (incl. recibos y tickets, con
   nombres es_AR), validación de receptor/CAE, disponibilidad de comprobantes
   según responsabilidad ARCA, perfil fiscal del proveedor, mapeo de impuestos
   por códigos AFIP, alícuotas de IVA, posición fiscal y validación de
   moneda/UoM/número.
-- Cola de revisores con devolución, exclusión y segunda revisión; actividades
-  de Odoo y puente “Abrir en la app” desde el formulario de documento.
+- **Flujo de un solo rol (noviembre 2026):** el rol Revisor, la cola de
+  revisores, la segunda revisión y las actividades de Odoo se eliminaron para
+  el PoC (v19.0.1.7.0). El contador confirma o excluye con motivo; el puente
+  "Abrir en la app" se mantiene.
 - Registro de correcciones por campo, traducciones es_AR y shell dedicado
   para contadores; consola de evaluación conservada para managers e
   investigadores.
@@ -116,8 +122,8 @@ Prototipos iniciales (históricos) `ocr-scripts/`, `facturas-backend-UNC-PSI/` S
 9 App contable **Módulo nuevo `account_invoice_ai_platform`** sobre el núcleo de evaluación; la UI de contadores no se mezcla con la consola de investigación.
 10 Unidad de trabajo **Lote** (`account.invoice.ai.batch`), una organización/compañía por lote; documentos de integraciones en la cola “Sin lote”.
 11 Confirmación contable La confirmación genera/actualiza **una factura borrador** (`account.move`) por factura. No se publica automáticamente; duplicados y CUIT de proveedor se controlan antes.
-12 Flujo de revisión Contadores confirman casos normales; revisores resuelven excepciones, devuelven, excluyen y solicitan segunda revisión. Actividades de Odoo; sin email en v1.
-13 UX de revisión Inicio de lotes + pantalla “Nuevo lote” + workspace de dos paneles (formulario/visor) + cola de revisores. La consola de evaluación queda para managers/investigadores.
+12 Flujo de revisión Contadores confirman o excluyen con motivo. Las excepciones bloqueantes se confirman con motivo obligatorio por el propio contador (sin rol revisor desde el 2026-11). Notificaciones solo por chatter.
+13 UX de revisión Inicio de lotes + pantalla “Nuevo lote” + workspace de dos paneles (formulario/visor). La consola de evaluación queda para managers/investigadores.
 14 Fuera de v1 Umbral por monto alto, asignación explícita, email, resaltado de líneas, dashboard de app y publicación automática.
 
 ### 3.1. Uso de documentos y confidencialidad
@@ -259,13 +265,11 @@ Además del modelo de evaluación, `account_invoice_ai_platform` agrega:
   uploader, notas, flag de fallback IA, estado (`uploading`, `processing`,
   `in_review`, `completed`, `cancelled`), contadores, cierre y documentos.
 - `account.invoice.ai.document`: `batch_id`, `review_state` (`pending`,
-  `in_progress`, `waiting_reviewer`, `returned`, `confirmed`, `excluded`),
-  `review_reason`, claim blando (`claimed_by/at`), pedido de revisión,
-  devolución y auditoría de confirmación/exclusión.
+  `in_progress`, `confirmed`, `excluded`), `review_reason` removed,
+  claim blando (`claimed_by/at`) y auditoría de confirmación/exclusión.
 - `account.invoice.ai.annotation`: campos de encabezado (`partner_id`, tipo
   de comprobante, punto de venta, número, fechas, moneda, subtotal, IVA,
-  otros impuestos y total), `second_review_requested_by/at`,
-  `second_review_notes`, `second_reviewed_at`; las líneas agregan
+  otros impuestos y total); las líneas agregan
   `tax_ids` y `tax_labels`.
 - `account.invoice.ai.annotation.line`: impuestos seleccionados y etiquetas
   extraídas, además de los campos de ítem existentes.
@@ -312,8 +316,7 @@ de revisión: el estado del documento no implica el de todas sus runs.
 
 En la app contable, `processing_state` convive con `review_state`; los
 estados visibles para contadores son: listo para revisar, en revisión,
-esperando revisor, devuelto, confirmado, excluido y fallido/requiere
-corrección.
+confirmado, excluido y fallido/requiere corrección.
 
 ### `account.invoice.ai.document`
 
@@ -422,9 +425,8 @@ La app está implementada como client actions de Owl en
 ### 8.1. Inicio de la app
 
 - Lotes con progreso, contadores y estado.
-- “Mis pendientes” (documentos reclamados por el usuario o devueltos a él).
+- “Mis pendientes” (documentos reclamados por el usuario).
 - Cola “Sin lote” para documentos creados por integraciones/QR.
-- Cola “Revisión” para revisores, con contador en vivo.
 - Acceso directo a “Nuevo lote”.
 
 ### 8.2. Nuevo lote
@@ -444,11 +446,9 @@ La app está implementada como client actions de Owl en
 - Ítems editables en grilla; detalle de la línea seleccionada con producto,
   cuenta, impuestos, unidad, código, descuento y marcas de ilegible/ambiguo;
   sugerencias de matching inline.
-- Autosave, guardado visible, “Confirmar y siguiente”, “Enviar a revisión”,
-  “Saltar”, reintento de extracción, reapertura y resumen del lote.
-- Revisores: confirmar, devolver al contador con nota, excluir con motivo,
-  solicitar segunda revisión o completarla (el solicitante no puede
-  completar ni confirmar su propia segunda revisión).
+- Autosave, guardado visible, “Confirmar y siguiente” (con caja de motivo
+  cuando hay excepciones bloqueantes), “Excluir” con motivo, “Saltar”,
+  reintento de extracción, reapertura y resumen del lote.
 
 ### 8.4. Roles
 
@@ -456,11 +456,9 @@ La app está implementada como client actions de Owl en
   organizaciones.
 - **Administrador de organización:** usuarios, compañías y acuerdos de su
   organización.
-- **Contador validador:** carga, revisa y confirma facturas; envía
-  excepciones a revisión.
-- **Revisor:** resuelve excepciones, devuelve, excluye y gestiona segundas
-  revisiones. Designado en cada organización; el Platform Manager es el
-  respaldo global.
+- **Contador validador:** carga, revisa, confirma facturas (con motivo para
+  excepciones bloqueantes) o las excluye con motivo. Único rol operativo del
+  PoC.
 - **Investigador/evaluador:** consola de evaluación y resultados autorizados,
   sin acceso innecesario a los originales.
 
@@ -565,9 +563,9 @@ odoo-argentina-invoice-ocr/            # existe (rama 19.0-dev)
 │                                      # runs, lines, predictions, validations,
 │                                      # annotations (ground truth), métricas
 │                                      # operativas y exportaciones
-└── account_invoice_ai_platform/       # app contable (v19.0.1.6.0): batches,
-                                       # workspace, factura borrador, revisores,
-                                       # shell, correcciones y traducciones
+└── account_invoice_ai_platform/       # app contable (v19.0.1.7.0): batches,
+                                       # workspace, factura borrador, shell,
+                                       # correcciones y traducciones
 
 Mueve-TEC/odoo-argentina (19.0)        # existe: l10n_ar completo
 
@@ -615,7 +613,7 @@ Etapa 4 En preparación Piloto con contadores; checklist QA, verificación de ai
 Etapa 5 Implementada Matching de productos/cuentas y candidatos en la UI.
 Etapa 6 Parcial Métricas/export implementados; dashboard de app pendiente.
 Etapa 7 Pendiente Anonimización.
-App Implementada Fases 1–3: backend, UI contable y flujo de revisores; umbral por monto alto diferido.
+App Implementada Fases 1–3: backend y UI contable; flujo de un solo rol (revisores/segunda revisión eliminados en 19.0.1.7.0); umbral por monto alto diferido.
 
 La app contable se implementó en paralelo a las etapas 1–3; el piloto de la
 Etapa 4 es el próximo hito.
@@ -761,13 +759,13 @@ Cobertura de capa de texto baja en documentos reales Medir proporción texto vs.
 Documentos de baja calidad Registrar calidad y permitir revisión manual.
 Respuestas inconsistentes del VLM JSON Schema estricto + reintento (ya en extractor) + conservación de respuesta cruda.
 Cambios de modelo o prompt Versionado obligatorio (ya en extractor; extender a Odoo).
-Etiquetas humanas incorrectas Estados de revisión y segunda validación.
+Etiquetas humanas incorrectas Estados de revisión y anotaciones versionadas.
 Catálogos y cuentas diferentes Contexto por compañía, sin IDs globales.
-Duplicados Hash de archivo + duplicado semántico (proveedor, tipo, punto de venta, número y año); bloqueo con override de revisor.
-Umbral por monto alto Diferido a una versión futura; por ahora las excepciones se revisan manualmente.
-Segunda revisión Manual; el solicitante no puede completarla ni confirmar; Platform Manager como respaldo.
+Duplicados Hash de archivo + duplicado semántico (proveedor, tipo, punto de venta, número y año); confirmación solo con motivo obligatorio.
+Umbral por monto alto Diferido a una versión futura; por ahora las excepciones se confirman con motivo.
+Segunda revisión Eliminada con el rol revisor (2026-11); si se reintroduce, volver como caso dudoso del piloto.
 Lotes grandes Límite 100 archivos/25 MB; procesamiento por cron y cola visible; paginación fina pendiente.
-Notificaciones Actividades de Odoo + colas in-app; email diferido.
+Notificaciones Chatter + colas in-app; email diferido.
 Costos de inferencia Instancia vLLM externa compartida; medición por página y límites de concurrencia.
 Credenciales commiteadas (UNC-PSI) Revocación, rotación y limpieza de historial (Etapa 0).
 Uso de datos para entrenamiento Consentimiento específico y trazabilidad del alcance autorizado.
@@ -775,13 +773,13 @@ Anonimización incompleta No publicar datasets sin proceso futuro de anonimizaci
 
 **Decisiones cerradas en el diseño de la app:** confirmación = factura
 borrador (sin publicar); un lote por organización/compañía; cola compartida con
-claim blando; revisores designados por organización; segunda revisión manual;
-notificaciones por actividades; límites 100 archivos/25 MB; formatos
+claim blando; flujo de un solo rol con excepciones confirmables por motivo
+obligatorio; notificaciones por chatter; límites 100 archivos/25 MB; formatos
 PDF/JPG/PNG/TIFF; umbral por monto alto diferido.
 
 **Decisiones aún abiertas:** política de conservación/eliminación; almacenar
-imágenes renderizadas vs. regenerarlas; política exacta de segunda revisión para
-casos dudosos; alcance final de los consentimientos; métrica de materialidad
+imágenes renderizadas vs. regenerarlas; alcance final de los consentimientos;
+métrica de materialidad
 para habilitar el umbral por monto; comportamiento en móviles.
 
 ## 16. Principios del proyecto
@@ -809,7 +807,8 @@ para habilitar el umbral por monto; comportamiento en móviles.
 
 La app contable ya está implementada sobre Odoo 19 CE con localización
 argentina: carga por lotes, workspace de revisión, confirmación a factura
-borrador y flujo de revisores con actividades. El siguiente hito es el piloto
+borrador y flujo de un solo rol (confirmar con motivo o excluir). El siguiente
+hito es el piloto
 de la Etapa 4: 2–3 equipos contables, 500+ facturas reales, métricas operativas
 y validación del dataset. Ese historial, junto al benchmark existente del
 extractor, constituirá la base para comparar modelos, desarrollar estrategias

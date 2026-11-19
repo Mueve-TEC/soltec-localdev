@@ -212,13 +212,17 @@ country, ARS as currency and `es_AR` as the active language.
 | `org_admin_a`      | Norte        | Demo Norte SA, Demo Servicios SRL | Organization Administrator |
 | `accountant_a1`    | Norte        | Demo Norte SA                     | Accountant Validator       |
 | `accountant_a2`    | Norte        | Demo Servicios SRL                | Accountant Validator       |
-| `reviewer_a1`      | Norte        | Demo Norte SA, Demo Servicios SRL | Reviewer                   |
-| `reviewer_a2`      | Norte        | Demo Norte SA, Demo Servicios SRL | Reviewer                   |
+| `reviewer_a1`      | Norte        | Demo Norte SA, Demo Servicios SRL | Accountant Validator\*     |
+| `reviewer_a2`      | Norte        | Demo Norte SA, Demo Servicios SRL | Accountant Validator\*     |
 | `researcher_a`     | Norte        | Demo Norte SA, Demo Servicios SRL | Researcher                 |
 | `org_admin_b`      | Sur          | Demo Sur SA                       | Organization Administrator |
 | `accountant_b1`    | Sur          | Demo Sur SA                       | Accountant Validator       |
-| `reviewer_b1`      | Sur          | Demo Sur SA                       | Reviewer                   |
+| `reviewer_b1`      | Sur          | Demo Sur SA                       | Accountant Validator\*     |
 | `researcher_b`     | Sur          | Demo Sur SA                       | Researcher                 |
+
+\* Former Reviewer users: the Reviewer group was removed with the
+single-role flow (2026-11, platform v19.0.1.7.0); the migration copies them
+into the Accountant Validator group.
 
 The `*_a*` users belong to Estudio Contable Norte; `accountant_a2` works with
 `Demo Servicios SRL` (the second Norte company). The `*_b*` users belong to
@@ -228,8 +232,10 @@ organizations.
 Demo data: 7 company-scoped suppliers (RI/Monotributo/Exento), AR products
 with IVA 21%, 3 batches with 5 sample documents (standard, Factura A,
 multi-page, credit note and an image), one “Sin lote” document, and one credit
-note waiting for a reviewer. Login passwords are local demo credentials and
-are intentionally not recorded here; reset them locally if needed.
+note back in the shared review queue (the reviewer flow was removed in
+platform v19.0.1.7.0). Demo credentials: **every demo user's password equals
+its login name** (e.g. `accountant_a1` / `accountant_a1`); reset them locally
+if the DB is ever exposed beyond localhost.
 
 Use `DB=demo_ar` on every CLI target, e.g.:
 
