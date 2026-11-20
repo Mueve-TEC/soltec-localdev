@@ -9,6 +9,7 @@ services:
       - "8070:8069"
     command:
       - "--addons-path=/mnt/custom-addons,/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons"
+      - "--workers=0"
     volumes:
       - ./custom-addons:/mnt/custom-addons
       - odoo-web-data:/var/lib/odoo
