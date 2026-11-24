@@ -176,3 +176,73 @@ make test DB=demo_ar MODULE=account_invoice_ai_evaluation # combined run reporte
   `PLAN.md`, both AGENTS.md, evaluation README, both es_AR.po purged.
 - Demo credentials normalized (2026-11-19): every demo user's password now
   equals its login name; verified end-to-end via the Playwright smoke login.
+
+## Progress — guided client setup access fix (2026-11-24)
+
+- Fixed the `AccessError` on `res.company` after creating a client from the
+  account packages wizard (platform v19.0.1.8.1). The wizard used to return the
+  new company form, but the web client overwrites the action
+  `allowed_company_ids` with the session's active companies, so the core
+  `res.company` record rule blocked the read. The wizard now returns a sticky
+  summary notification (company, chart, accounts created/skipped) and closes;
+  the company is still linked to the organization and granted to its users.
+  The user reloads and switches to the new company in the company switcher.
+- Tests: `account_invoice_ai_platform` full suite 38/38 green (run with
+  `--workers=0`); the UI flow was rechecked with Playwright as `org_admin_a`.
+
+## Progress — Batches list New button (2026-11-24)
+
+- The Batches list (`action_ai_batch`) now sets `create="false"` and exposes a
+  primary **New batch** header button (`display="always"`) that runs
+  `action_ai_platform_new_batch`. The default New button created a bare batch
+  record; both the home and the list now reach the full-page Nuevo lote screen.
+- XML view change only: `-u account_invoice_ai_platform` + restart. Platform
+  suite 38/38 green and the flow verified with Playwright.
+
+## Progress — simplified shell for organization admins (2026-11-24)
+
+- Platform v19.0.1.9.0: `_is_ai_platform_shell` now returns true for every
+  platform user except the Platform Manager, so **Organization Administrators**
+  also get the focused shell (no app switcher, brand or menu sections).
+- The app home shows an **Administration** block to users with
+  `group_chart_kit_manager` (org admins and platform managers): New Client,
+  Account Packages, Organization Types and Organization. Validators do not see
+  it.
+- Platform Managers keep the full backend. Direct URLs to the hidden
+  evaluation-console menus remain reachable (known gap unchanged).
+- Tests: platform suite 39/39 green (`--workers=0`); roles checked with
+  Playwright on `demo_ar` (org_admin shell + admin buttons, validator no admin
+  block, manager full backend).
+
+## Progress — platform / evaluation app separation (2026-11-24)
+
+- The accountant app now has its own top-level **Invoice Platform** root menu
+  (`account_invoice_ai_platform.menu_ai_platform_root`, platform icon). Its
+  menus are only Batches, New Client and a Configuration menu with Account
+  Packages / Organization Types.
+- `account_invoice_ai_evaluation` owns the separate top-level **AI Evaluation**
+  app (`menu_ai_evaluation_root`, landing on Annotations, evaluation icon) with
+  the evaluation-console menus (Documents, Import invoice, Runs, Annotations,
+  Validations, Predictions, Metrics, Exports and its Configuration).
+- The platform no longer re-parents or renames the evaluation root menu; the
+  evaluation module's data was updated to set it as a top-level app with its own
+  action/icon. Versions: platform 19.0.1.10.0, evaluation 19.0.1.6.1.
+- Roles: validators and org admins stay in the platform shell; only Platform
+  Managers see both apps. Researchers see only AI Evaluation.
+- Tests: combined evaluation + platform suite 94/94 green (`--workers=0`); the
+  two apps and their menu sections were verified with Playwright on `demo_ar`.
+
+## Progress — active-company filtering (2026-11-24)
+
+- Fixed batches from other allowed companies appearing while a company was
+  selected (platform 19.0.1.10.1, evaluation 19.0.1.6.2). The AI record rules
+  for batches, corrections, documents, runs, lines, predictions, validations,
+  annotations/annotation lines and exports now filter by the **active companies**
+  (`company_ids` in the rule context) instead of all of `user.company_ids`.
+  Platform Managers keep their global manager rule.
+- Added regression tests for batches and documents under
+  `allowed_company_ids`; combined evaluation + platform suite 96/96 green
+  (`--workers=0`).
+- UI verified on `demo_ar` as `org_admin_a` with the `cids` cookie: Demo Norte
+  only shows Norte batches, Demo Servicios only Servicios, and Demo Sur never
+  appears; with both active, both sets appear.
