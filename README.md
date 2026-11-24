@@ -39,6 +39,13 @@ Luego en un navegador ingresamos a [localhost:8070](http://localhost:8070).
 > `WEB_PORT` y `PGADMIN_PORT` en su `.env` (p. ej. 8069 y 5050) para no chocar
 > con este entorno. Los valores por defecto son 8070 y 5051.
 
+> **Embeddings opcionales:** `l10n_ar_invoice_match` puede usar un sidecar CPU
+> local para la capa semántica (desactivado por defecto). Se arranca con
+> `docker compose --profile embedding build embedding && docker compose --profile embedding up -d embedding`
+> (puerto local 8081; Odoo lo usa como `http://embedding:8000`). Detalle en
+> `submodules/odoo-ocr/l10n_ar_invoice_match/README.rst` y
+> `submodules/odoo-ocr/sidecar/embedding/README.md`.
+
 ## Agregar módulos
 
 Para agregar módulos de _Odoo_ a la imagen basta con copiarlos en el directorio [**`custom-addons/`**](/custom-addons/) y luego levantar nuevamente el container.

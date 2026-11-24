@@ -164,7 +164,7 @@ if task involves <one of the rows above>:
 ```
 soltec-localdev-odoo19/
 ├── Dockerfile              # FROM muevetec/soltec-odoo:19.0.10-dev (SOL3, Odoo 19)
-├── docker-compose.yml      # web (Odoo) + db (postgres:14) + pgadmin
+├── docker-compose.yml      # web (Odoo) + db (postgres:14) + pgadmin (+ optional embedding sidecar)
 ├── Makefile                # wrappers: build/up/down/install/upgrade/test/lint…
 ├── scripts/test-runner.sh  # filters Odoo --test-enable output (PASS/FAIL/ERROR)
 ├── pyproject.toml          # [tool.ruff] — supermodule-level ruff config
@@ -247,6 +247,18 @@ Services and ports:
 - **pgadmin** — `dpage/pgadmin4`, host port **5051** (`PGADMIN_PORT`
   override) → http://localhost:5051, login `admin@hola.com` / `admin`;
   connect to host `db`, port `5432`, user `odoo`, password `odoo`.
+- **embedding** (optional, Compose profile `embedding`) — CPU embedding
+  sidecar for `l10n_ar_invoice_match` T3 (FastAPI + fastembed/ONNX, default
+  `intfloat/multilingual-e5-small`). Source:
+  `submodules/odoo-ocr/sidecar/embedding/`; image
+  `soltec-localdev-embedding:1.0`; host port **8081**
+  (`127.0.0.1:${EMBEDDING_PORT:-8081}`) and `http://embedding:8000` from
+  Odoo. Start with
+  `docker compose --profile embedding build embedding && docker compose --profile embedding up -d embedding`.
+  It is disabled in the Odoo settings by default and is not part of the
+  addons path. The model is downloaded at image build time; swapping it
+  requires the `EMBEDDING_MODEL`/`EMBEDDING_MODEL_FILE`/`EMBEDDING_DIM` build
+  args. See the sidecar README and ADR 0006.
 
 Notes:
 
