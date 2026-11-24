@@ -31,6 +31,39 @@ services:
     networks:
       - odoo-network
 
+  # Optional CPU embedding sidecar for l10n_ar_invoice_match (profile:
+  # embedding). Odoo reaches it as http://embedding:8000; the host port is
+  # bound to localhost only. See submodules/odoo-ocr/sidecar/embedding/.
+  embedding:
+    build:
+      context: ./submodules/odoo-ocr/sidecar/embedding
+      args:
+        EMBEDDING_MODEL: ${EMBEDDING_MODEL:-intfloat/multilingual-e5-small}
+        EMBEDDING_MODEL_FILE: ${EMBEDDING_MODEL_FILE:-onnx/model_O4.onnx}
+        EMBEDDING_DIM: ${EMBEDDING_DIM:-384}
+    image: soltec-localdev-embedding:1.0
+    profiles:
+      - embedding
+    environment:
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-intfloat/multilingual-e5-small}
+      - EMBEDDING_MODEL_FILE=${EMBEDDING_MODEL_FILE:-onnx/model_O4.onnx}
+      - EMBEDDING_DIM=${EMBEDDING_DIM:-384}
+    ports:
+      - "127.0.0.1:${EMBEDDING_PORT:-8081}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - odoo-network
+
   pgadmin:
     image: dpage/pgadmin4
     environment:
