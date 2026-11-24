@@ -250,13 +250,24 @@ Services and ports:
 
 Notes:
 
-- No `.env`, no db-filter, no `--test-enable` in the compose `command`.
-  Create DBs via the web "Manage Databases" page (master password screen) and
-  pass `-d <db>` on every CLI invocation.
+- No `.env` in the main checkout (the sibling OCR checkout uses one for its
+  ports), no db-filter, no `--test-enable` in the compose `command`. Create DBs
+  via the web "Manage Databases" page (master password screen) and pass
+  `-d <db>` on every CLI invocation.
 - `docker compose exec web odoo` bypasses the entrypoint env vars, so **always**
   pass `--db_host=db --db_user=odoo --db_password=odoo` on CLI runs.
 - If the container is not running, use `docker compose run --rm web` instead of
   `docker compose exec web`.
+
+### Sibling OCR pilot checkout
+
+`~/odoo/beca-2026/soltec-localdev19-ocr` is a second checkout of this
+supermodule on the same `19.0-dev` branch. It keeps its own `.env`
+(`WEB_PORT=8069`, `PGADMIN_PORT=5050`), Docker project/volumes and `demo_ar`
+database; the supermodule history and submodule revisions are shared. Update it
+with `git fetch local-main && git merge local-main/19.0-dev` and re-run
+`make sync`. Submodule working trees may differ (matching WIP vs accountant
+app) while the branch records the integrated revision.
 
 ## Editing modules (the daily workflow)
 

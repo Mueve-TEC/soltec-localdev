@@ -35,6 +35,10 @@ docker compose up -d
 
 Luego en un navegador ingresamos a [localhost:8070](http://localhost:8070).
 
+> Si corrés un checkout hermano (por ejemplo el entorno OCR), definí
+> `WEB_PORT` y `PGADMIN_PORT` en su `.env` (p. ej. 8069 y 5050) para no chocar
+> con este entorno. Los valores por defecto son 8070 y 5051.
+
 ## Agregar módulos
 
 Para agregar módulos de _Odoo_ a la imagen basta con copiarlos en el directorio [**`custom-addons/`**](/custom-addons/) y luego levantar nuevamente el container.
