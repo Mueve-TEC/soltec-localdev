@@ -20,6 +20,9 @@ TEST_TAGS ?=
 HTTP_PORT ?= 8099
 SLUG ?=
 SRC_DB ?= admin
+RESTORE_DB ?= $(DB)_restore_check
+PILOT_SECRET_SCAN ?= 0
+PILOT_SCAN_PATHS ?= . ../invoice-item-extractor ../facturas-backend-UNC-PSI ../ocr-scripts
 ODOO_RUN   = $(DOCKER_COMPOSE) exec web
 ODOO_RUN_RM = $(DOCKER_COMPOSE) run --rm web
 
@@ -102,6 +105,14 @@ test-install-raw: ## Correr tests de MODULE vía -i SIN filtrar
 		--stop-after-init --log-level=info
 
 # ---------------------------------------------------------------------------
+# Pilot readiness (Etapa 4)
+# ---------------------------------------------------------------------------
+.PHONY: pilot-check
+pilot-check:    ## Verificar readiness del piloto (DB, reglas, adjuntos, restore, secretos)
+	DB='$(DB)' RESTORE_DB='$(RESTORE_DB)' SECRET_SCAN='$(PILOT_SECRET_SCAN)' \
+		SECRET_SCAN_PATHS='$(PILOT_SCAN_PATHS)' bash scripts/pilot-check.sh
+
+# ---------------------------------------------------------------------------
 # Base de datos / shell
 # ---------------------------------------------------------------------------
 .PHONY: dbshell odoo-shell init-db
@@ -176,6 +187,15 @@ ticket-done:    ## Eliminar ticket (worktree + DB + volúmenes); KEEP=1 / FORCE=
 
 golden-refresh: ## Recrear la DB golden desde SRC_DB (default: admin)
 	@SRC_DB='$(SRC_DB)' bash scripts/ticket.sh golden-refresh
+
+# ---------------------------------------------------------------------------
+# Seguridad
+# ---------------------------------------------------------------------------
+SECRET_SCAN_PATHS ?= .
+
+.PHONY: secret-scan
+secret-scan:    ## Buscar secretos con gitleaks/trufflehog (paths: SECRET_SCAN_PATHS)
+	bash scripts/secret-scan.sh $(SECRET_SCAN_PATHS)
 
 # ---------------------------------------------------------------------------
 # Help

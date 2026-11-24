@@ -1,0 +1,15 @@
+title = "soltec-localdev"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Generated addons, tool caches and local ticket state"
+paths = [
+    '''custom-addons/''',
+    '''\.git/''',
+    '''node_modules/''',
+    '''\.ruff_cache/''',
+    '''\.ticket/''',
+    '''\.env$''',
+]

@@ -32,8 +32,8 @@ to develop and test the SolTec / SOL3 Argentine localization modules
 What it is / is not:
 
 - It does **not** contain the Odoo server source — it rides on the SOL3 base
-  image `muevetec/soltec-odoo:19.0.6-dev` (`FROM` in `Dockerfile`; Odoo Server
-  19.0-20260817).
+  image `muevetec/soltec-odoo:19.0.10-dev` (`FROM` in `Dockerfile`; Odoo Server
+  19.0-20260908).
 - The base image **bakes in ~123 modules** at `/mnt/extra-addons` (the
   read-only production baseline). The editable layer is **`custom-addons/`**
   (host `./custom-addons`, bind-mounted at `/mnt/custom-addons`), which is
@@ -163,7 +163,7 @@ if task involves <one of the rows above>:
 
 ```
 soltec-localdev-odoo19/
-├── Dockerfile              # FROM muevetec/soltec-odoo:19.0.6-dev (SOL3, Odoo 19)
+├── Dockerfile              # FROM muevetec/soltec-odoo:19.0.10-dev (SOL3, Odoo 19)
 ├── docker-compose.yml      # web (Odoo) + db (postgres:14) + pgadmin
 ├── Makefile                # wrappers: build/up/down/install/upgrade/test/lint…
 ├── scripts/test-runner.sh  # filters Odoo --test-enable output (PASS/FAIL/ERROR)
@@ -407,10 +407,37 @@ make format    # autofix (ruff + prettier), won't fail
   before committing.
 - **No type checker** is configured (`mypy`/`pyright` absent).
 
+## Security scanning & pilot QA
+
+Ported from the OCR environment (`~/odoo/beca-2026/soltec-localdev19-ocr`,
+branch `19.0-ocr`) on 2026-11-24 so both environments share the same gates.
+
+- **Secret scanning**: `make secret-scan SECRET_SCAN_PATHS="<paths>"` (default
+  path `.`) uses `gitleaks`/`trufflehog`, with a Docker fallback. Findings are
+  redacted and the command exits non-zero when something is found. Config:
+  `.gitleaks.toml`; script: `scripts/secret-scan.sh`.
+- **Pilot readiness**: `make pilot-check DB=<db>` checks services, database,
+  installed modules, record rules for every AI model, private document
+  attachments, a live (rolled-back) multi-organization probe and a
+  dump/restore drill. Add `PILOT_SECRET_SCAN=1` to include the secret gate.
+- **Docs**: `docs/pilot/qa-checklist.md`, `docs/pilot/readiness-2026-11-13.md`,
+  `docs/security/*`, `PLAN.md`, `PLAN_DE_CUENTAS.md` and
+  `handoff-soltec-ocr-accountant-app.md`.
+- **Known blockers**: the QA checklist still contains Reviewer/second-review/
+  activity steps from before the single-role simplification (v19.0.1.7.0);
+  update it before the pilot. The security gate is **blocked** by two findings
+  in `../facturas-backend-UNC-PSI` (OAuth client secret and service-account
+  key); do not start the pilot until they are revoked/rotated and the scan is
+  clean.
+
 ## Documentation
 
 - **`README.md`** (root, Spanish) — user-facing setup guide.
 - **`AGENTS.md`** — this file (opencode project context, auto-loaded).
+- **`PLAN.md`**, **`PLAN_DE_CUENTAS.md`**, **`handoff-soltec-ocr-accountant-app.md`**
+  — project roadmap, chart-of-accounts design and OCR app handoff, restored on
+  2026-11-24 from the OCR environment. Module-specific behavior still lives in
+  the submodule docs.
 - Module-level migration/ops docs live **inside the submodules** (the durable
   source of truth): `submodules/odoo-argentina/MIGRATION_19.md` (18→19
   backlog + ARCA A5 response-shape reference),
@@ -521,9 +548,9 @@ t_<slug> TEMPLATE ticket_template` when the golden DB has no open
 install/upgrade/test` too.
 6. **Translations**: plain `-u` doesn't overwrite; use `--i18n-overwrite`;
    empty `msgstr` terms are skipped (never clean existing DB values).
-7. **Image versions**: `muevetec/soltec-odoo:19.0.6-dev` is Odoo 19 (correct).
-   The older tag `1.0.6-dev` is **Odoo 16** — do not switch the Dockerfile to
-   it.
+7. **Image versions**: `muevetec/soltec-odoo:19.0.10-dev` is Odoo 19 (correct).
+   The older `19.0.6-dev` tag is also Odoo 19; the `1.0.6-dev` tag is **Odoo
+   16** — do not switch the Dockerfile to it.
 8. **`mock_repo` placeholder**: `submodules/mock_repo/mock_module/` is a
    tracked placeholder (added in `42ded27`). This branch now ships real
    submodules ([Tracked submodules](#tracked-submodules)), so the placeholder is

@@ -175,3 +175,16 @@ sudo usermod -aG docker $USER
 ```bash
 newgrp docker
 ```
+
+## Seguridad
+
+Antes de abrir el piloto, ejecutar el barrido de secretos sobre todos los
+repositorios y datasets del proyecto:
+
+```bash
+make secret-scan SECRET_SCAN_PATHS=". ../invoice-item-extractor ../facturas-backend-UNC-PSI"
+```
+
+Usa `gitleaks` o `trufflehog`; si no están instalados, cae al contenedor Docker
+de gitleaks. Los hallazgos se muestran redactados y el comando termina con error
+si encuentra credenciales.
