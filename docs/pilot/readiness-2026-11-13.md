@@ -1,5 +1,9 @@
 # Pilot readiness record - 2026-11-13
 
+> Historical record: it predates the single-role flow (v19.0.1.7.0), the
+> chart-of-accounts packages (v19.0.1.8.0) and the integrated branches. Use
+> `docs/pilot/qa-checklist.md` for the current gate.
+
 Local readiness run for `demo_ar` (Argentina demo database) before the Etapa 4 pilot.
 
 ## Commands

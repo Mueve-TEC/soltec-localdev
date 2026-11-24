@@ -434,12 +434,13 @@ branch `19.0-ocr`) on 2026-11-24 so both environments share the same gates.
 - **Docs**: `docs/pilot/qa-checklist.md`, `docs/pilot/readiness-2026-11-13.md`,
   `docs/security/*`, `PLAN.md`, `PLAN_DE_CUENTAS.md` and
   `handoff-soltec-ocr-accountant-app.md`.
-- **Known blockers**: the QA checklist still contains Reviewer/second-review/
-  activity steps from before the single-role simplification (v19.0.1.7.0);
-  update it before the pilot. The security gate is **blocked** by two findings
-  in `../facturas-backend-UNC-PSI` (OAuth client secret and service-account
-  key); do not start the pilot until they are revoked/rotated and the scan is
-  clean.
+- **Known blockers**: the QA checklist was updated on 2026-11-24 for the
+  single-role flow, chart-of-accounts packages and item matching; re-run it
+  after the Etapa 0 fixes. The security gate is **blocked** by two findings in
+  `../facturas-backend-UNC-PSI` (OAuth client secret and service-account key);
+  do not start the pilot until they are revoked/rotated and the scan is clean.
+  Phase-4 hardening still lists the evaluation-console action restriction and
+  server-side upload limits as open gaps (see the checklist).
 
 ## Documentation
 
