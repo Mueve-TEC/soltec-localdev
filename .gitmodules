@@ -8,7 +8,7 @@
 	branch = 19.0
 [submodule "submodules/odoo-ocr"]
 	path = submodules/odoo-ocr
-	url = git@github.com:Mueve-TEC/odoo-ocr.git
+	url = git@github.com:Mueve-TEC/odoo-argentina-invoice-ocr.git
 	branch = 19.0
 [submodule "submodules/payment-sipago"]
 	path = submodules/payment-sipago

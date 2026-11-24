@@ -71,13 +71,13 @@ Branch model & source of truth:
 
 ### Tracked submodules
 
-| Submodule                          | Upstream                                             | Branch | Purpose                                                                                                                              |
-| ---------------------------------- | ---------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `submodules/odoo-argentina`        | `git@github.com:Mueve-TEC/odoo-argentina.git`        | 19.0   | Argentine localization: AR tax, ARCA/AFIP web services (`l10n_ar_fiscal_ws*`), payment bundle, `eh_*` mueve-modules, POS FE, reports |
-| `submodules/odoo-argentina-envios` | `git@github.com:Mueve-TEC/odoo-argentina-envios.git` | 19.0   | Delivery / Correo Argentino shipping modules                                                                                         |
-| `submodules/odoo-ocr`              | `git@github.com:Mueve-TEC/odoo-ocr.git`              | 19.0   | `l10n_ar_factura_qr` (electronic-invoice QR)                                                                                         |
-| `submodules/odoo-union`            | `git@github.com:Mueve-TEC/odoo-union.git`            | 19.0   | Union / "sindicato" modules (affiliation, contributions, benefits, school positions)                                                 |
-| `submodules/payment-sipago`        | `git@github.com:Mueve-TEC/payment_sipago.git`        | 19.0   | Sipago card-payment provider (web checkout), migrated to Odoo 19                                                                     |
+| Submodule                          | Upstream                                                  | Branch | Purpose                                                                                                                              |
+| ---------------------------------- | --------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `submodules/odoo-argentina`        | `git@github.com:Mueve-TEC/odoo-argentina.git`             | 19.0   | Argentine localization: AR tax, ARCA/AFIP web services (`l10n_ar_fiscal_ws*`), payment bundle, `eh_*` mueve-modules, POS FE, reports |
+| `submodules/odoo-argentina-envios` | `git@github.com:Mueve-TEC/odoo-argentina-envios.git`      | 19.0   | Delivery / Correo Argentino shipping modules                                                                                         |
+| `submodules/odoo-ocr`              | `git@github.com:Mueve-TEC/odoo-argentina-invoice-ocr.git` | 19.0   | `l10n_ar_factura_qr` (electronic-invoice QR)                                                                                         |
+| `submodules/odoo-union`            | `git@github.com:Mueve-TEC/odoo-union.git`                 | 19.0   | Union / "sindicato" modules (affiliation, contributions, benefits, school positions)                                                 |
+| `submodules/payment-sipago`        | `git@github.com:Mueve-TEC/payment_sipago.git`             | 19.0   | Sipago card-payment provider (web checkout), migrated to Odoo 19                                                                     |
 
 Removed from this branch (were vendored before): `odooapps`, OCA
 `bank-statement-import`, OCA `account-reconcile`. Recoverable from git history
